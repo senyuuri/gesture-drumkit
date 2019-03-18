@@ -3,11 +3,11 @@
 
     <string name="app_name">HelloAccessory(P)</string>
     <string name="hello_world">Hello Accessory!</string>
-    <string name="ConnectionAcceptedMsg">Service Connection from HelloAccessory(C) has been accepted.</string>
-    <string name="ConnectionEstablishedMsg">Service Connection with HelloAccessory(C) has been established.</string>
-    <string name="ConnectionTerminateddMsg">Service Connection with HelloAccessory(C) has been terminated.</string>
-    <string name="ConnectionAlreadyExist">Service Connection has already been existed!!!</string>
-    <string name="ConnectionAlreadyDisconnected">Service Connection has already been disconnected!!!</string>
+    <string name="connection_accept">Accepted connection from watch.</string>
+    <string name="connection_established">Established connection with watch</string>
+    <string name="connection_terminated">Terminated connection with watch</string>
+    <string name="connection_already_exists">Already connected to a device</string>
+    <string name="connection_already_disconnected">Already disconnected</string>
     <string name="title_activity_main">MainActivity</string>
 
 </resources>
