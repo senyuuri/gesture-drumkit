@@ -1,5 +1,7 @@
 apply plugin: 'com.google.protobuf'
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion 26
@@ -36,6 +38,7 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.android.support:appcompat-v7:26.+'
     implementation 'com.google.protobuf:protobuf-lite:3.0.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 }
 
 
@@ -62,4 +65,7 @@ protobuf {
             }
         }
     }
+}
+repositories {
+    mavenCentral()
 }
