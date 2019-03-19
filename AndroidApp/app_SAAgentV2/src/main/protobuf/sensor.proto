@@ -2,7 +2,6 @@
 // one message.
 
 syntax = "proto3";
-package Sensors;
 
 message SensorMessage {
     int32 sensor_type = 1; // accelerometer, etc
