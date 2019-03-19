@@ -15,9 +15,35 @@
  */
 
 #include "helloaccessory.h"
-#include <sys/time.h>
 #include "pb_encode.h"
 #include "sensor.pb.h"
+#include <sensor.h>
+#include <sys/time.h>
+
+#define UPDATE_INTERVAL 100
+#define SENSOR_COUNT 2
+// 32 bytes should be enough to transmit each sensor msg for now
+#define BUFFER_SIZE 32
+
+static sensor_type_e sensors_used[] = { SENSOR_ACCELEROMETER, SENSOR_GYROSCOPE };
+static bool started_sensors = false;
+
+void _data_finalize(void);
+static void _initialize_sensors(void);
+
+typedef struct _sensor_data {
+	sensor_h handle;
+	sensor_listener_h listener;
+	uint8_t buffer[BUFFER_SIZE];
+} sensor_data_t;
+
+// have 1 buffer for each sensor,
+// assumes that data from buffer will be sent before sensor callback is called again
+static struct data_info {
+	sensor_data_t sensors[SENSOR_COUNT];
+} s_info = {
+	.sensors = { {0}, },
+};
 
 typedef struct appdata {
 	Evas_Object *win;
@@ -26,7 +52,6 @@ typedef struct appdata {
 	Eext_Circle_Surface *circle_surface;
 	Evas_Object *circle_genlist;
 } appdata_s;
-
 
 static appdata_s *object;
 static void win_delete_request_cb(void *data, Evas_Object *obj, void *event_info)
@@ -97,39 +122,15 @@ static void btn_cb_connect(void *data, Evas_Object *obj, void *event_info)
 
 static void btn_cb_send(void *data, Evas_Object *obj, void *event_info)
 {
-	Elm_Object_Item *it = event_info;
-	elm_genlist_item_selected_set(it, EINA_FALSE);
+	if (!started_sensors) {
+		Elm_Object_Item *it = event_info;
+		elm_genlist_item_selected_set(it, EINA_FALSE);
 
-	// message sending here
-	// TODO: edit this
-
-	// 128 is just a rough number
-	// buffer created here to avoid concurrency issues
-	uint8_t buffer[128];
-
-	struct timeval  tv;
-	gettimeofday(&tv, NULL);
-
-	// just send a simple message for now
-	SensorMessage message = SensorMessage_init_zero;
-	message.sensor_type = 1;
-	message.data_count = 1;
-	message.data[0] = 0.1453f;
-	message.timing_count = 1;
-	message.timing[0] = ((int64_t)tv.tv_sec*1000) + tv.tv_usec/1000;
-
-	pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
-	bool status = pb_encode(&stream, SensorMessage_fields, &message);
-	size_t message_length = stream.bytes_written;
-
-	if (!status)
-	{
-		dlog_print(DLOG_DEBUG, TAG, "Encoding msg failed");
-		dlog_print(DLOG_DEBUG, TAG, PB_GET_ERROR(&stream));
-	} 
-	else 
-	{
-		send_data(message_length, buffer);
+		dlog_print(DLOG_DEBUG, TAG, "initializing sensors");
+		_initialize_sensors();
+		started_sensors = true;
+	} else {
+		dlog_print(DLOG_INFO, TAG, "already started sensors");
 	}
 
 }
@@ -140,10 +141,11 @@ static void btn_cb_disconnect(void *data, Evas_Object *obj, void *event_info)
 	elm_genlist_item_selected_set(it, EINA_FALSE);
 
 	terminate_service_connection();
+	_data_finalize();
 }
 
 char *main_menu_names[] = {
-	"Connect", "Fetch", "Disconnect",
+	"Connect", "Send Sensor Data", "Disconnect",
 	NULL
 };
 
@@ -180,8 +182,6 @@ static char *_gl_main_text_get(void *data, Evas_Object *obj, const char *part)
 		snprintf(buf, 1023, "%s", main_menu_names[index - 1]);
 
 	return strdup(buf);
-
-
 }
 
 
@@ -367,6 +367,102 @@ static void ui_app_low_memory(app_event_info_h event_info, void *user_data)
 {
 	/*APP_EVENT_LOW_MEMORY*/
 }
+
+/**
+ * @brief Callback invoked by a sensor's listener.
+ * @param sensor The sensor's handle.
+ * @param event The event data.
+ * @param data The user data.
+ */
+static void _sensor_event_cb(sensor_h sensor, sensor_event_s *event, void *data)
+{
+	int count = event->value_count;
+	float *values = &event->values[0];
+
+	int sensor_idx = (int) data;
+	uint8_t *buffer = s_info.sensors[sensor_idx].buffer;
+
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+
+	SensorMessage message = SensorMessage_init_zero;
+	message.sensor_type = sensor_idx;
+	message.data_count = count;
+	// TODO: value 0 is not the timestamp
+	message.timestamp = values[0];
+	for (int i = 1; i < count; i++) {
+		message.data[i] = values[i];
+	}
+
+	pb_ostream_t stream = pb_ostream_from_buffer(buffer, BUFFER_SIZE);
+	bool status = pb_encode(&stream, SensorMessage_fields, &message);
+	size_t message_length = stream.bytes_written;
+
+	if (!status)
+	{
+		dlog_print(DLOG_DEBUG, TAG, "Encoding msg failed");
+		dlog_print(DLOG_DEBUG, TAG, PB_GET_ERROR(&stream));
+	} 
+	else 
+	{
+		send_data(message_length, buffer);
+	}
+}
+
+/**
+ * @brief Function used to destroy the sensor listeners. Should be invoked when the app is terminated.
+ */
+void _data_finalize(void)
+{
+	int ret = SENSOR_ERROR_NONE;
+	int i;
+
+	for (i = 0; i < SENSOR_COUNT; ++i) {
+		ret = sensor_destroy_listener(s_info.sensors[i].listener);
+		if (ret != SENSOR_ERROR_NONE) {
+			dlog_print(DLOG_ERROR, LOG_TAG, "[%s:%d] sensor_get_default_sensor() error: %s", __FILE__, __LINE__, get_error_message(ret));
+			continue;
+		}
+	}
+}
+
+static void _initialize_sensors(void)
+{
+	dlog_print(DLOG_DEBUG, TAG, "init sensors");
+
+	int ret;
+	for (int i = 0; i < SENSOR_COUNT; i++) {
+		sensor_type_e st = sensors_used[i];
+
+		ret = sensor_get_default_sensor(st, &s_info.sensors[i].handle);
+		if (ret != SENSOR_ERROR_NONE) {
+			dlog_print(DLOG_ERROR, TAG, "[%s:%d] sensor_get_default_sensor() error: %s", __FILE__, __LINE__, get_error_message(ret));
+			continue;
+		}
+
+		ret = sensor_create_listener(s_info.sensors[i].handle, &s_info.sensors[i].listener);
+		if (ret != SENSOR_ERROR_NONE) {
+			dlog_print(DLOG_ERROR, TAG, "[%s:%d] sensor_create_listener() error: %s", __FILE__, __LINE__, get_error_message(ret));
+			continue;
+		}
+
+		ret = sensor_listener_set_event_cb(s_info.sensors[i].listener, UPDATE_INTERVAL, _sensor_event_cb, (void*)i);
+		if (ret != SENSOR_ERROR_NONE) {
+			dlog_print(DLOG_ERROR, TAG, "[%s:%d] sensor_listener_set_event_cb() error: %s", __FILE__, __LINE__, get_error_message(ret));
+			continue;
+		}
+
+		ret = sensor_listener_start(s_info.sensors[i].listener);
+		if (ret != SENSOR_ERROR_NONE)
+		{
+			dlog_print(DLOG_ERROR, LOG_TAG, "[%s:%d] sensor_listener_start() error: %s", __FILE__, __LINE__, get_error_message(ret));
+			return;
+		}
+
+		dlog_print(DLOG_DEBUG, TAG, "started sensor type: %d", st);
+	}
+}
+
 
 int main(int argc, char *argv[])
 {

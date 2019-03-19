@@ -86,7 +86,9 @@ class ReceiverService(context: Context) : SAAgentV2(TAG, context, SASOCKET_CLASS
             connection.listener = object: ServiceConnectionListener {
                 override fun onReceive(message: Sensor.SensorMessage) {
                     // TODO: add RxJava publisher code
-                    Toast.makeText(applicationContext, "got a msg", Toast.LENGTH_SHORT).show()
+
+                    Log.d(TAG, "Sensor type: ${message.sensorType}, Timestamp: ${message.timestamp}, Data: ${message.dataList}")
+                    //Toast.makeText(applicationContext, "got a msg", Toast.LENGTH_SHORT).show()
                 }
 
                 override fun onConnectionLost() {
