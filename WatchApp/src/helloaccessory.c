@@ -18,7 +18,6 @@
 #include "pb_encode.h"
 #include "sensor.pb.h"
 #include <sensor.h>
-#include <sys/time.h>
 
 #define UPDATE_INTERVAL 100
 #define SENSOR_COUNT 2
@@ -382,15 +381,14 @@ static void _sensor_event_cb(sensor_h sensor, sensor_event_s *event, void *data)
 	int sensor_idx = (int) data;
 	uint8_t *buffer = s_info.sensors[sensor_idx].buffer;
 
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
+	// timestamp returned by event is in microseconds, see
+	// https://developer.tizen.org/ko/forums/native-application-development/sensor-event-timestamp?langswitch=ko
 
 	SensorMessage message = SensorMessage_init_zero;
 	message.sensor_type = sensor_idx;
 	message.data_count = count;
-	// TODO: value 0 is not the timestamp
-	message.timestamp = values[0];
-	for (int i = 1; i < count; i++) {
+	message.timestamp = event->timestamp;
+	for (int i = 0; i < count; i++) {
 		message.data[i] = values[i];
 	}
 
