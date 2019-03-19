@@ -49,9 +49,7 @@ class ReceiverService(context: Context) : SAAgentV2(TAG, context, SASOCKET_CLASS
         } catch (e: Exception) {
             e.printStackTrace()
 
-            if (e !is SsdkUnsupportedException) {
-                Log.e(TAG, "Application cannot use Samsung Accessory SDK")
-            } else {
+            if (e is SsdkUnsupportedException) {
                 when (e.type) {
                     SsdkUnsupportedException.VENDOR_NOT_SUPPORTED,
                     SsdkUnsupportedException.DEVICE_NOT_SUPPORTED ->
@@ -64,6 +62,8 @@ class ReceiverService(context: Context) : SAAgentV2(TAG, context, SASOCKET_CLASS
                         Log.e(TAG, "We recommend that you update your Samsung Accessory SDK before using this application.")
 
                 }
+            } else {
+                Log.e(TAG, "Application cannot use Samsung Accessory SDK")
             }
         }
     }
