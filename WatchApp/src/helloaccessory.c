@@ -19,7 +19,8 @@
 #include "sensor.pb.h"
 #include <sensor.h>
 
-#define UPDATE_INTERVAL 100
+// to get 200hz, request an update every 5 ms
+#define UPDATE_INTERVAL 5
 #define SENSOR_COUNT 2
 // 32 bytes should be enough to transmit each sensor msg for now
 #define BUFFER_SIZE 32
