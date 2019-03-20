@@ -6,6 +6,6 @@ syntax = "proto3";
 message SensorMessage {
     int32 sensor_type = 1; // accelerometer, etc
     repeated float data = 2; // data from each axis
-    int64 timestamp = 3; // epoch timestamp in millisecs
+    int64 timestamp = 3; // epoch timestamp in microseconds
 }
 

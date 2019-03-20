@@ -382,7 +382,7 @@ static void _sensor_event_cb(sensor_h sensor, sensor_event_s *event, void *data)
 	uint8_t *buffer = s_info.sensors[sensor_idx].buffer;
 
 	// timestamp returned by event is in microseconds, see
-	// https://developer.tizen.org/ko/forums/native-application-development/sensor-event-timestamp?langswitch=ko
+	// https://developer.tizen.org/ko/forums/native-application-development/sensor-event-timestamp
 
 	SensorMessage message = SensorMessage_init_zero;
 	message.sensor_type = sensor_idx;
