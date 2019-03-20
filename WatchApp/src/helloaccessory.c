@@ -384,10 +384,19 @@ static void _sensor_event_cb(sensor_h sensor, sensor_event_s *event, void *data)
 	// timestamp returned by event is in microseconds, see
 	// https://developer.tizen.org/ko/forums/native-application-development/sensor-event-timestamp
 
+	struct timespec spec;
+	clock_gettime(CLOCK_REALTIME, &spec);
+	unsigned long long current_time_ms = spec.tv_sec * 1000LL + spec.tv_nsec / 1000000LL;
+
+	clock_gettime(CLOCK_MONOTONIC, &spec);
+	unsigned long long monotonic_time_ms = spec.tv_sec * 1000LL + spec.tv_nsec / 1000000LL;
+
+	unsigned long long event_time_ms = current_time_ms - monotonic_time_ms + event->timestamp / 1000LL;
+
 	SensorMessage message = SensorMessage_init_zero;
 	message.sensor_type = sensor_idx;
 	message.data_count = count;
-	message.timestamp = event->timestamp;
+	message.timestamp = event_time_ms;
 	for (int i = 0; i < count; i++) {
 		message.data[i] = values[i];
 	}
