@@ -22,8 +22,7 @@
 // to get 200hz, request an update every 5 ms
 #define UPDATE_INTERVAL 5
 #define SENSOR_COUNT 2
-// 32 bytes should be enough to transmit each sensor msg for now
-#define BUFFER_SIZE 32
+#define BUFFER_SIZE 128
 
 static sensor_type_e sensors_used[] = { SENSOR_ACCELEROMETER, SENSOR_GYROSCOPE };
 static bool started_sensors = false;
@@ -384,26 +383,26 @@ static void _sensor_event_cb(sensor_h sensor, sensor_event_s *event, void *data)
 
 	// timestamp returned by event is in microseconds, see
 	// https://developer.tizen.org/ko/forums/native-application-development/sensor-event-timestamp
-
 	struct timespec spec;
 	clock_gettime(CLOCK_REALTIME, &spec);
 	unsigned long long current_time_ms = spec.tv_sec * 1000LL + spec.tv_nsec / 1000000LL;
-
 	clock_gettime(CLOCK_MONOTONIC, &spec);
 	unsigned long long monotonic_time_ms = spec.tv_sec * 1000LL + spec.tv_nsec / 1000000LL;
-
 	unsigned long long event_time_ms = current_time_ms - monotonic_time_ms + event->timestamp / 1000LL;
 
-	SensorMessage message = SensorMessage_init_zero;
-	message.sensor_type = sensor_idx;
-	message.data_count = count;
-	message.timestamp = event_time_ms;
+	WatchPacket packet = WatchPacket_init_zero;
+	packet.messages_count = 1;
+
+	WatchPacket_SensorMessage* message = &packet.messages[0];
+	message->sensor_type = sensor_idx;
+	message->data_count = count;
+	message->timestamp = event_time_ms;
 	for (int i = 0; i < count; i++) {
-		message.data[i] = values[i];
+		message->data[i] = values[i];
 	}
 
 	pb_ostream_t stream = pb_ostream_from_buffer(buffer, BUFFER_SIZE);
-	bool status = pb_encode(&stream, SensorMessage_fields, &message);
+	bool status = pb_encode(&stream, WatchPacket_fields, &packet);
 	size_t message_length = stream.bytes_written;
 
 	if (!status)

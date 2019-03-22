@@ -1,1 +1,2 @@
-SensorMessage.data  max_count:3
+WatchPacket.messages            max_count:10
+WatchPacket.SensorMessage.data  max_count:3

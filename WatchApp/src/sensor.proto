@@ -1,11 +1,1 @@
-// A very simple protocol definition, consisting of only
-// one message.
-
-syntax = "proto3";
-
-message SensorMessage {
-    int32 sensor_type = 1; // accelerometer, etc
-    repeated float data = 2; // data from each axis
-    uint64 timestamp = 3; // epoch timestamp in ms
-}
-
+../../AndroidApp/app_SAAgentV2/src/main/protobuf/sensor.proto

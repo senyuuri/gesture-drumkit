@@ -23,7 +23,6 @@
 
 package com.samsung.android.sdk.accessory.example.helloaccessory.provider
 
-import Sensors.Sensor
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
@@ -84,10 +83,11 @@ class ReceiverService(context: Context) : SAAgentV2(TAG, context, SASOCKET_CLASS
             val connection = socket as ServiceConnection
 
             connection.listener = object: ServiceConnectionListener {
-                override fun onReceive(message: Sensor.SensorMessage) {
+                override fun onReceive(packet: Sensor.WatchPacket) {
                     // TODO: add RxJava publisher code
 
-                    Log.d(TAG, "Sensor type: ${message.sensorType}, Timestamp: ${message.timestamp}, Data: ${message.dataList}")
+                    val firstMsg = packet.getMessages(0)
+                    Log.d(TAG, "Sensor type: ${firstMsg.sensorType}, Timestamp: ${firstMsg.timestamp}, Data: ${firstMsg.dataList}")
                     //Toast.makeText(applicationContext, "got a msg", Toast.LENGTH_SHORT).show()
                 }
 

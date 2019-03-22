@@ -1,6 +1,5 @@
 package com.samsung.android.sdk.accessory.example.helloaccessory.provider
 
-import Sensors.Sensor
 import android.util.Log
 import com.google.protobuf.InvalidProtocolBufferException
 import com.samsung.android.sdk.accessory.SASocket
@@ -16,8 +15,10 @@ class ServiceConnection : SASocket(ServiceConnection::class.java.name) {
 
     override fun onReceive(channelId: Int, data: ByteArray) {
         try {
-            val sm = Sensor.SensorMessage.parseFrom(data)
-            listener.onReceive(sm)
+            Log.i(TAG, "got a msg")
+            val watchPacket = Sensor.WatchPacket.parseFrom(data)
+
+            listener.onReceive(watchPacket)
         } catch (e: InvalidProtocolBufferException) {
             Log.e(TAG, e.message)
         }
@@ -29,6 +30,6 @@ class ServiceConnection : SASocket(ServiceConnection::class.java.name) {
 }
 
 interface ServiceConnectionListener {
-    fun onReceive(message: Sensor.SensorMessage)
+    fun onReceive(packet: Sensor.WatchPacket)
     fun onConnectionLost()
 }
