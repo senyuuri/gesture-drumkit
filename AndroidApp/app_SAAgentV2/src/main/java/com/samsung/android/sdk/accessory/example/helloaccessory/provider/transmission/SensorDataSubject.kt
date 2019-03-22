@@ -2,6 +2,7 @@ package com.samsung.android.sdk.accessory.example.helloaccessory.provider.transm
 
 import io.reactivex.subjects.PublishSubject
 import Sensor.WatchPacket.SensorMessage
+import android.util.Log
 import io.reactivex.Observable
 
 /**
@@ -18,6 +19,11 @@ class SensorDataSubject private constructor() {
                 }
 
                 override fun onReceive(packet: Sensor.WatchPacket) {
+                    // TODO: disable after finishing recording activity
+                    val firstMsg = packet.getMessages(0)
+                    Log.d(TAG, "Packet's First Msg: ${firstMsg.sensorType}, " +
+                            "Time: ${firstMsg.timestamp}, " +
+                            "Data: ${firstMsg.dataList}")
                     packet.messagesList.forEach {
                         subject.onNext(it)
                     }
@@ -30,6 +36,7 @@ class SensorDataSubject private constructor() {
 
     companion object {
         val instance = SensorDataSubject()
+        private val TAG = "SensorDataSubject"
     }
 
     private fun reset() {
