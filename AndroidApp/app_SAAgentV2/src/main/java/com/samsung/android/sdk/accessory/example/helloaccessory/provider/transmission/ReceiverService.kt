@@ -21,7 +21,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.samsung.android.sdk.accessory.example.helloaccessory.provider
+package com.samsung.android.sdk.accessory.example.helloaccessory.provider.transmission
 
 import android.content.Context
 import android.util.Log
@@ -32,6 +32,7 @@ import com.samsung.android.sdk.accessory.SA
 import com.samsung.android.sdk.accessory.SAAgentV2
 import com.samsung.android.sdk.accessory.SAPeerAgent
 import com.samsung.android.sdk.accessory.SASocket
+import com.samsung.android.sdk.accessory.example.helloaccessory.provider.R
 
 
 class ReceiverService(context: Context) : SAAgentV2(TAG, context, SASOCKET_CLASS) {

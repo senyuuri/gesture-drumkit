@@ -3,7 +3,7 @@ package com.samsung.android.sdk.accessory.example.helloaccessory.provider;
 import android.app.Activity;
 import android.os.Bundle;
 
-public class ProviderActivity extends Activity {
+public class StartingActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

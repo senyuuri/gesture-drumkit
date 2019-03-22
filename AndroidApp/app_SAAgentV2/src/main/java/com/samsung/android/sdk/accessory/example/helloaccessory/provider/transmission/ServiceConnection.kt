@@ -1,4 +1,4 @@
-package com.samsung.android.sdk.accessory.example.helloaccessory.provider
+package com.samsung.android.sdk.accessory.example.helloaccessory.provider.transmission
 
 import android.util.Log
 import com.google.protobuf.InvalidProtocolBufferException

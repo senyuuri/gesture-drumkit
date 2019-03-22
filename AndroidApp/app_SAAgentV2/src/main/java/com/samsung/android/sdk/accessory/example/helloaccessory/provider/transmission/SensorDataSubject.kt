@@ -1,4 +1,4 @@
-package com.samsung.android.sdk.accessory.example.helloaccessory.provider
+package com.samsung.android.sdk.accessory.example.helloaccessory.provider.transmission
 
 import io.reactivex.subjects.PublishSubject
 import Sensor.WatchPacket.SensorMessage
