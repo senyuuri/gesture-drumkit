@@ -4,8 +4,15 @@ import android.util.Log
 import com.google.protobuf.InvalidProtocolBufferException
 import com.samsung.android.sdk.accessory.SASocket
 
+/**
+ * Samsung socket class, don't want to touch this much
+ */
 class ServiceConnection : SASocket(ServiceConnection::class.java.name) {
-    lateinit var listener: ServiceConnectionListener
+    var listener: ServiceConnectionListener? = null
+    set(value) {
+        value?.onInit()
+        field = value
+    }
 
     companion object {
         private val TAG = "ServiceConnection"
@@ -15,21 +22,21 @@ class ServiceConnection : SASocket(ServiceConnection::class.java.name) {
 
     override fun onReceive(channelId: Int, data: ByteArray) {
         try {
-            Log.i(TAG, "got a msg")
             val watchPacket = Sensor.WatchPacket.parseFrom(data)
+            listener?.onReceive(watchPacket)
 
-            listener.onReceive(watchPacket)
         } catch (e: InvalidProtocolBufferException) {
             Log.e(TAG, e.message)
         }
     }
 
     override fun onServiceConnectionLost(reason: Int) {
-        listener.onConnectionLost()
+        listener?.onConnectionLost()
     }
 }
 
 interface ServiceConnectionListener {
+    fun onInit()
     fun onReceive(packet: Sensor.WatchPacket)
     fun onConnectionLost()
 }

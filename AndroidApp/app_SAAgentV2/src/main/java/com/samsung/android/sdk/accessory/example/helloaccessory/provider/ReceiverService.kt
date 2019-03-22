@@ -82,19 +82,7 @@ class ReceiverService(context: Context) : SAAgentV2(TAG, context, SASOCKET_CLASS
         if (result == SAAgentV2.CONNECTION_SUCCESS) {
             val connection = socket as ServiceConnection
 
-            connection.listener = object: ServiceConnectionListener {
-                override fun onReceive(packet: Sensor.WatchPacket) {
-                    // TODO: add RxJava publisher code
-
-                    val firstMsg = packet.getMessages(0)
-                    Log.d(TAG, "Sensor type: ${firstMsg.sensorType}, Timestamp: ${firstMsg.timestamp}, Data: ${firstMsg.dataList}")
-                    //Toast.makeText(applicationContext, "got a msg", Toast.LENGTH_SHORT).show()
-                }
-
-                override fun onConnectionLost() {
-                    Toast.makeText(applicationContext, R.string.connection_terminated, Toast.LENGTH_SHORT).show()
-                }
-            }
+            connection.listener = SensorDataSubject.instance.serviceConnectionListener
 
         } else if (result == SAAgentV2.CONNECTION_ALREADY_EXIST) {
             Log.e(TAG, "onServiceConnectionResponse, CONNECTION_ALREADY_EXIST")
