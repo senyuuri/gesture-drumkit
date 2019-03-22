@@ -10,7 +10,7 @@ import io.reactivex.Observable
  * Sensor data observers should observe this subject
  */
 class SensorDataSubject private constructor() {
-    private lateinit var subject: PublishSubject<SensorMessage>
+    private var subject: PublishSubject<SensorMessage> = PublishSubject.create()
 
     val serviceConnectionListener: ServiceConnectionListener =
             object: ServiceConnectionListener {

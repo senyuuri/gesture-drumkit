@@ -1,10 +1,10 @@
 package com.samsung.android.sdk.accessory.example.helloaccessory.provider
 
+import android.app.Activity
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
 import android.widget.Toast
 
-class RecordingActivity: AppCompatActivity() {
+class RecordingActivity: Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
