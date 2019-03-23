@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">HelloAccessory(P)</string>
-    <string name="hello_world">Hello Accessory!</string>
-    <string name="connection_accept">Accepted connection from watch.</string>
+    <string name="app_name">DrumKit</string>
+    <string name="connection_accept">Accepted connection from watch</string>
     <string name="connection_established">Established connection with watch</string>
     <string name="connection_terminated">Terminated connection with watch</string>
     <string name="connection_already_exists">Already connected to a device</string>

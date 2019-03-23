@@ -18,7 +18,7 @@
 #include <glib.h>
 #include <sap.h>
 
-#define HELLO_ACCESSORY_PROFILE_ID "/sample/hello"
+#define HELLO_ACCESSORY_PROFILE_ID "/cs4347/drumkit"
 #define HELLO_ACCESSORY_CHANNELID 104
 
 struct priv {

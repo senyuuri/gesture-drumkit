@@ -1,9 +1,9 @@
-package com.samsung.android.sdk.accessory.example.helloaccessory.provider
+package com.cs4347.drumkit
 
 import android.app.Activity
 import android.os.Bundle
 import android.os.Environment
-import com.samsung.android.sdk.accessory.example.helloaccessory.provider.transmission.SensorDataSubject
+import com.cs4347.drumkit.transmission.SensorDataSubject
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_recording.*

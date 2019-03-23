@@ -7,7 +7,7 @@ android {
     compileSdkVersion 26
     buildToolsVersion '28.0.3'
     defaultConfig {
-        applicationId "provider.helloaccessory.example.accessory.sdk.android.samsung.com.helloaccessoryprovider"
+        applicationId "drumkit.cs4347.com"
         minSdkVersion 21
         targetSdkVersion 26
         versionCode 6

@@ -1,4 +1,4 @@
-package com.samsung.android.sdk.accessory.example.helloaccessory.provider.transmission
+package com.cs4347.drumkit.transmission
 
 import android.util.Log
 import com.google.protobuf.InvalidProtocolBufferException
