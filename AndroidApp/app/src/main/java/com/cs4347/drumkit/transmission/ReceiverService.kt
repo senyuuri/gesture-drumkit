@@ -21,18 +21,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.samsung.android.sdk.accessory.example.helloaccessory.provider.transmission
+package com.cs4347.drumkit.transmission
 
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import com.cs4347.drumkit.R
 
 import com.samsung.android.sdk.SsdkUnsupportedException
 import com.samsung.android.sdk.accessory.SA
 import com.samsung.android.sdk.accessory.SAAgentV2
 import com.samsung.android.sdk.accessory.SAPeerAgent
 import com.samsung.android.sdk.accessory.SASocket
-import com.samsung.android.sdk.accessory.example.helloaccessory.provider.R
 
 
 /**

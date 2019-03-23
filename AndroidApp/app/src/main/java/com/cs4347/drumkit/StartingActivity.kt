@@ -1,4 +1,4 @@
-package com.samsung.android.sdk.accessory.example.helloaccessory.provider
+package com.cs4347.drumkit
 
 import android.Manifest
 import android.app.Activity
@@ -11,7 +11,6 @@ import android.os.Build
 import android.support.annotation.NonNull
 import android.support.annotation.RequiresApi
 import android.support.v4.content.ContextCompat
-
 
 
 class StartingActivity : Activity() {
