@@ -2,53 +2,88 @@ package com.samsung.android.sdk.accessory.example.helloaccessory.provider
 
 import android.app.Activity
 import android.os.Bundle
-import android.widget.Toast
+import android.os.Environment
+import com.samsung.android.sdk.accessory.example.helloaccessory.provider.transmission.SensorDataSubject
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.schedulers.Schedulers
+import kotlinx.android.synthetic.main.activity_recording.*
+import java.io.BufferedWriter
+import java.io.File
+import java.sql.Date
+import java.sql.Timestamp
 
+/**
+ * Writes recorded data to sdcard
+ */
 class RecordingActivity: Activity() {
+
+    companion object {
+        private val rootDir = "drumkit_record"
+        // existing sensors all give 3 data values
+        private val csvHeaders = "sensor_type,timestamp_ms,data1,data2,data3"
+    }
+
+    private val dataLoggerDisposable = CompositeDisposable()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_recording)
 
-        Toast.makeText(applicationContext, "WIP, does nothing so far, please look at the debug log for sensor data", Toast.LENGTH_LONG)
-                .show()
-        // TODO: WIP
-        // assign new observable on start record
-        // -> get timestamp
-        //
-        // end observable on stop or activity closed
-    }
+        start_button.setOnClickListener {
+            stop_button.isEnabled = true
+            start_button.isEnabled = false
 
-    /** Some sample code
-     *
-    val sd_main = File(Environment.getExternalStorageDirectory()+"/yourlocation")
-    var success = true
-    if (!sd_main.exists()) {
-        success = sd_main.mkdir()
-    }
-    if (success) {
-        val sd = File("filename.txt")
+            val fileName = "${timeNow()}.txt"
+            val fileLoc = "${Environment.getExternalStorageDirectory().absolutePath}/$rootDir/$fileName"
+            val fileWriter = getFileWriter(fileLoc)
+            fileWriter.write(csvHeaders)
+            fileWriter.newLine()
 
-        if (!sd.exists()) {
-            success = sd.mkdir()
-        }
-    }
-    if (success) {
-        // directory exists or already created
-        val writer = File(fileName).bufferedWriter()
-        try {
-            // write when msg is received
-        } catch (e: Exception) {
-            // handle the exception
-            // close & toast
-            // and kill observable
+            val closeFile = { fileWriter.close() }
+
+            val sub = SensorDataSubject.instance.observe()
+                    .subscribeOn(Schedulers.io())
+                    .doOnComplete(closeFile)
+                    .doOnDispose(closeFile)
+                    .subscribe {
+                        val line = listOf<String>(
+                                it.sensorType.toString(),
+                                it.timestamp.toString(),
+                                it.dataList.joinToString(",")
+                        )
+                        fileWriter.write(line.joinToString(","))
+                        fileWriter.newLine()
+                    }
+            dataLoggerDisposable.add(sub)
         }
 
-    } else {
-        // directory creation is not successful
-        // Toast
+        stop_button.setOnClickListener {
+            stop_button.isEnabled = false
+            start_button.isEnabled = true
+            dataLoggerDisposable.clear()
+        }
     }
 
-     */
+    override fun onStop() {
+        dataLoggerDisposable.clear()
+        super.onStop()
+    }
+
+    private fun timeNow(): String {
+        val stamp = Timestamp(System.currentTimeMillis())
+        return Date(stamp.time).toString()
+    }
+
+
+    private fun getFileWriter(location: String): BufferedWriter {
+        val file = File(location)
+        file.parentFile.mkdir()
+        if (!file.exists()) {
+        } else {
+            throw FileAlreadyExistsException(file, null, "Tried to make file at $location, but file already exists")
+        }
+        return file.bufferedWriter()
+    }
+
 
 }

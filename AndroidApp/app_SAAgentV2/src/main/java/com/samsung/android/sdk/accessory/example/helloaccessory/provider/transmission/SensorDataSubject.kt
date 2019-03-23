@@ -15,6 +15,7 @@ class SensorDataSubject private constructor() {
     val serviceConnectionListener: ServiceConnectionListener =
             object: ServiceConnectionListener {
                 override fun onInit() {
+                    // reset after init doesn't matter, there should not be observers
                     reset()
                 }
 

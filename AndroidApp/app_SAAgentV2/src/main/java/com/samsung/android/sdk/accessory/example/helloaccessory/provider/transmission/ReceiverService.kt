@@ -35,6 +35,9 @@ import com.samsung.android.sdk.accessory.SASocket
 import com.samsung.android.sdk.accessory.example.helloaccessory.provider.R
 
 
+/**
+ * Samsung socket class, don't want to touch this much
+ */
 class ReceiverService(context: Context) : SAAgentV2(TAG, context, SASOCKET_CLASS) {
     companion object {
         private val TAG = "ReceiverService"
