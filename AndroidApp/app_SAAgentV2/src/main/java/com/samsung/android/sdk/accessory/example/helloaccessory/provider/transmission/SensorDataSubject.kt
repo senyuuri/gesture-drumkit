@@ -20,11 +20,13 @@ class SensorDataSubject private constructor() {
                 }
 
                 override fun onReceive(packet: Sensor.WatchPacket) {
-                    // TODO: disable after finishing recording activity
+                    // TODO: for debugging, delete before submission
+                    /*
                     val firstMsg = packet.getMessages(0)
                     Log.d(TAG, "Packet's First Msg: ${firstMsg.sensorType}, " +
                             "Time: ${firstMsg.timestamp}, " +
                             "Data: ${firstMsg.dataList}")
+                            */
                     packet.messagesList.forEach {
                         subject.onNext(it)
                     }

@@ -33,7 +33,7 @@ class RecordingActivity: Activity() {
             stop_button.isEnabled = true
             start_button.isEnabled = false
 
-            val fileName = "${timeNow()}.txt"
+            val fileName = "${timeNow()}.csv"
             val fileLoc = "${Environment.getExternalStorageDirectory().absolutePath}/$rootDir/$fileName"
             val fileWriter = getFileWriter(fileLoc)
             fileWriter.write(csvHeaders)
@@ -71,7 +71,7 @@ class RecordingActivity: Activity() {
 
     private fun timeNow(): String {
         val stamp = Timestamp(System.currentTimeMillis())
-        return Date(stamp.time).toString()
+        return "${Date(stamp.time)}_${System.currentTimeMillis()}"
     }
 
 
