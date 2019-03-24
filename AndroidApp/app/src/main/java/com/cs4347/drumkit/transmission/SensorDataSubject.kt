@@ -2,6 +2,7 @@ package com.cs4347.drumkit.transmission
 
 import io.reactivex.subjects.PublishSubject
 import Sensor.WatchPacket.SensorMessage
+import android.util.Log
 import io.reactivex.Observable
 
 /**
