@@ -1,5 +1,4 @@
 /.vscode
-/.cproject
 /.checkers
 /.rds_delta
 /.sdk_delta.info
@@ -9,12 +8,9 @@
 /vlc/
 /Debug/
 /Release/
-/lib/*.so*
-/lib/*.a
 /emotion/
 /libvlcpp/
 /medialibrary/
 *.tmp
 *~
-res/edje/*.edj
 /SA_Report/
