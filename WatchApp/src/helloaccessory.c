@@ -22,26 +22,32 @@
 // to get 200hz, request an update every 5 ms
 #define UPDATE_INTERVAL 5
 #define SENSOR_COUNT 2
-#define BUFFER_SIZE 128
+// (9x2) messages uses about 430 bytes
+#define BUFFER_SIZE 600
+// change the value in sensor.options if touching this (9*2)
+#define MESSAGES_COUNT 9*SENSOR_COUNT
 
 static sensor_type_e sensors_used[] = { SENSOR_ACCELEROMETER, SENSOR_GYROSCOPE };
 static bool started_sensors = false;
 
 void _data_finalize(void);
 static void _initialize_sensors(void);
+static void _send_message(void);
 
 typedef struct _sensor_data {
 	sensor_h handle;
 	sensor_listener_h listener;
-	uint8_t buffer[BUFFER_SIZE];
 } sensor_data_t;
 
-// have 1 buffer for each sensor,
-// assumes that data from buffer will be sent before sensor callback is called again
 static struct data_info {
 	sensor_data_t sensors[SENSOR_COUNT];
+	uint8_t buffer[BUFFER_SIZE];
+	WatchPacket_SensorMessage message_cache[MESSAGES_COUNT];
+	uint8_t cache_idx;
 } s_info = {
 	.sensors = { {0}, },
+	.message_cache = { {0}, },
+	.cache_idx = 0
 };
 
 typedef struct appdata {
@@ -139,8 +145,8 @@ static void btn_cb_disconnect(void *data, Evas_Object *obj, void *event_info)
 	Elm_Object_Item *it = event_info;
 	elm_genlist_item_selected_set(it, EINA_FALSE);
 
-	terminate_service_connection();
 	_data_finalize();
+	terminate_service_connection();
 }
 
 char *main_menu_names[] = {
@@ -368,6 +374,21 @@ static void ui_app_low_memory(app_event_info_h event_info, void *user_data)
 }
 
 /**
+ *  Get timestamp in ms from event time
+ *  https://developer.tizen.org/ko/forums/native-application-development/sensor-event-timestamp
+ */
+static unsigned long long clock_real_time_from_event_time(uint64_t event_time)
+{
+	struct timespec spec;
+	clock_gettime(CLOCK_REALTIME, &spec);
+	unsigned long long current_time_ms = spec.tv_sec * 1000LL + spec.tv_nsec / 1000000LL;
+	clock_gettime(CLOCK_MONOTONIC, &spec);
+	unsigned long long monotonic_time_ms = spec.tv_sec * 1000LL + spec.tv_nsec / 1000000LL;
+	unsigned long long event_time_ms = current_time_ms - monotonic_time_ms + event_time / 1000LL;
+	return event_time_ms;
+}
+
+/**
  * @brief Callback invoked by a sensor's listener.
  * @param sensor The sensor's handle.
  * @param event The event data.
@@ -375,32 +396,45 @@ static void ui_app_low_memory(app_event_info_h event_info, void *user_data)
  */
 static void _sensor_event_cb(sensor_h sensor, sensor_event_s *event, void *data)
 {
-	int count = event->value_count;
-	float *values = &event->values[0];
-
 	int sensor_idx = (int) data;
-	uint8_t *buffer = s_info.sensors[sensor_idx].buffer;
+	unsigned long long event_time_ms = clock_real_time_from_event_time(event->timestamp);
 
-	// timestamp returned by event is in microseconds, see
-	// https://developer.tizen.org/ko/forums/native-application-development/sensor-event-timestamp
-	struct timespec spec;
-	clock_gettime(CLOCK_REALTIME, &spec);
-	unsigned long long current_time_ms = spec.tv_sec * 1000LL + spec.tv_nsec / 1000000LL;
-	clock_gettime(CLOCK_MONOTONIC, &spec);
-	unsigned long long monotonic_time_ms = spec.tv_sec * 1000LL + spec.tv_nsec / 1000000LL;
-	unsigned long long event_time_ms = current_time_ms - monotonic_time_ms + event->timestamp / 1000LL;
+	WatchPacket_SensorMessage* msg = &s_info.message_cache[s_info.cache_idx];
+	msg->sensor_type = sensor_idx;
+	//msg->data_count = event->value_count;
+	msg->timestamp = event_time_ms;
 
-	WatchPacket packet = WatchPacket_init_zero;
-	packet.messages_count = 1;
-
-	WatchPacket_SensorMessage* message = &packet.messages[0];
-	message->sensor_type = sensor_idx;
-	message->data_count = count;
-	message->timestamp = event_time_ms;
-	for (int i = 0; i < count; i++) {
-		message->data[i] = values[i];
+	float *values = &event->values[0];
+	for (int i = 0; i < event->value_count; i++) {
+		msg->data[i] = values[i];
 	}
 
+	s_info.cache_idx++;
+
+	if (s_info.cache_idx == MESSAGES_COUNT) {
+		_send_message();
+	}
+}
+
+static void _send_message() {
+	uint8_t *buffer = s_info.buffer;
+
+	WatchPacket packet = WatchPacket_init_zero;
+	packet.messages_count = MESSAGES_COUNT;
+
+	for (int i = 0; i < MESSAGES_COUNT; i++) {
+		// struct copy
+		packet.messages[i] = s_info.message_cache[i];
+	}
+
+	// reset cache_idx after copying all the messages
+	s_info.cache_idx = 0;
+
+	// TODO: 
+	// try using a separate thread for everything below, if it makes sense to do so
+	// be careful with the buffer
+	// use a thread pool & limit the size to a small number?
+	// https://developer.tizen.org/development/guides/native-application/user-interface/efl/core-loop-and-os-interfacing/using-threads
 	pb_ostream_t stream = pb_ostream_from_buffer(buffer, BUFFER_SIZE);
 	bool status = pb_encode(&stream, WatchPacket_fields, &packet);
 	size_t message_length = stream.bytes_written;
@@ -431,6 +465,7 @@ void _data_finalize(void)
 			continue;
 		}
 	}
+	started_sensors = false;
 }
 
 static void _initialize_sensors(void)

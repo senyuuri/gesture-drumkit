@@ -1,2 +1,4 @@
-WatchPacket.messages            max_count:10
-WatchPacket.SensorMessage.data  max_count:3
+WatchPacket.messages            max_count:18
+WatchPacket.SensorMessage.data  max_count:3 fixed_count:true 
+WatchPacket packed_struct:true
+WatchPacket.SensorMessage packed_struct:true
