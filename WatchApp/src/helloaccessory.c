@@ -494,6 +494,12 @@ static void _initialize_sensors(void)
 			continue;
 		}
 
+		ret = sensor_listener_set_option(s_info.sensors[i].listener, SENSOR_OPTION_ALWAYS_ON);
+		if (ret != SENSOR_ERROR_NONE) {
+			dlog_print(DLOG_ERROR, TAG, "[%s:%d] sensor_listener_set_option() error: %s", __FILE__, __LINE__, get_error_message(ret));
+			continue;
+		}
+
 		ret = sensor_listener_start(s_info.sensors[i].listener);
 		if (ret != SENSOR_ERROR_NONE)
 		{
