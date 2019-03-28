@@ -15,7 +15,7 @@ data class Gesture(val type: GestureType, val time: Time)
 class GestureRecognizer {
 
     companion object {
-        private const val WINDOW_SIZE = 20
+        private const val WINDOW_SIZE = 10
         private const val HISTORY_SIZE = 200
 
         // 5ms between each message item
