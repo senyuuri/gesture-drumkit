@@ -25,6 +25,8 @@ class SensorDataSubject private constructor() {
                     Log.d(TAG, "Packet's First Msg: ${firstMsg.sensorType}, " +
                             "Time: ${firstMsg.timestamp}, " +
                             "Data: ${firstMsg.dataList}")
+
+                    // TODO: add check for late packets?
                     packet.messagesList.forEach {
                         subject.onNext(it)
                     }
