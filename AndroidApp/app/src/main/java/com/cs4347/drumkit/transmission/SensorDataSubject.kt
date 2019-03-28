@@ -42,7 +42,7 @@ class SensorDataSubject private constructor() {
 
     private fun reset() {
         if (!subject.hasComplete() || !subject.hasThrowable()) {
-            subject.onError(Exception("SensorDataSubject is abruptly reset"))
+            Log.e(TAG, "SensorDataSubject is abruptly reset")
         }
         subject = PublishSubject.create()
     }
