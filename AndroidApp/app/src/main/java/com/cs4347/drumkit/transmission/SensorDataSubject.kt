@@ -14,6 +14,9 @@ class SensorDataSubject private constructor() {
 
     val serviceConnectionListener: ServiceConnectionListener =
             object: ServiceConnectionListener {
+
+                private var prev_packet_time = Long.MIN_VALUE
+
                 override fun onInit() {
                     // reset after init doesn't matter, there should not be observers
                     reset()
@@ -25,8 +28,10 @@ class SensorDataSubject private constructor() {
                     Log.d(TAG, "Packet's First Msg: ${firstMsg.sensorType}, " +
                             "Time: ${firstMsg.timestamp}, " +
                             "Data: ${firstMsg.dataList}")
+                    if (prev_packet_time > packet.getMessages(0).timestamp) {
+                        throw AssertionError("Order of WatchPackets received is not chronological, handle it!")
+                    }
 
-                    // TODO: add check for late packets?
                     packet.messagesList.forEach {
                         subject.onNext(it)
                     }
