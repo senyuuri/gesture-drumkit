@@ -25,7 +25,7 @@
 // (9x2) messages uses about 430 bytes
 #define BUFFER_SIZE 600
 // change the value in sensor.options if touching this (9*2)
-#define MESSAGES_COUNT 9*SENSOR_COUNT
+#define MESSAGES_COUNT 10*SENSOR_COUNT
 
 static sensor_type_e sensors_used[] = { SENSOR_ACCELEROMETER, SENSOR_GYROSCOPE };
 static bool started_sensors = false;
@@ -44,6 +44,7 @@ static struct data_info {
 	uint8_t buffer[BUFFER_SIZE];
 	WatchPacket_SensorMessage message_cache[MESSAGES_COUNT];
 	uint8_t cache_idx;
+	size_t message_len;
 } s_info = {
 	.sensors = { {0}, },
 	.message_cache = { {0}, },
@@ -401,7 +402,7 @@ static void _sensor_event_cb(sensor_h sensor, sensor_event_s *event, void *data)
 
 	WatchPacket_SensorMessage* msg = &s_info.message_cache[s_info.cache_idx];
 	msg->sensor_type = sensor_idx;
-	//msg->data_count = event->value_count;
+	// msg->data_count = event->value_count;
 	msg->timestamp = event_time_ms;
 
 	float *values = &event->values[0];
@@ -416,28 +417,13 @@ static void _sensor_event_cb(sensor_h sensor, sensor_event_s *event, void *data)
 	}
 }
 
-static void _send_message() {
-	uint8_t *buffer = s_info.buffer;
 
-	WatchPacket packet = WatchPacket_init_zero;
-	packet.messages_count = MESSAGES_COUNT;
-
-	for (int i = 0; i < MESSAGES_COUNT; i++) {
-		// struct copy
-		packet.messages[i] = s_info.message_cache[i];
-	}
-
-	// reset cache_idx after copying all the messages
-	s_info.cache_idx = 0;
-
-	// TODO: 
-	// try using a separate thread for everything below, if it makes sense to do so
-	// be careful with the buffer
-	// use a thread pool & limit the size to a small number?
-	// https://developer.tizen.org/development/guides/native-application/user-interface/efl/core-loop-and-os-interfacing/using-threads
-	pb_ostream_t stream = pb_ostream_from_buffer(buffer, BUFFER_SIZE);
-	bool status = pb_encode(&stream, WatchPacket_fields, &packet);
-	size_t message_length = stream.bytes_written;
+static void _threaded_send_msg(void *data, Ecore_Thread *thread)
+{	
+	WatchPacket *packet = (WatchPacket*) data;
+	pb_ostream_t stream = pb_ostream_from_buffer(s_info.buffer, BUFFER_SIZE);
+	bool status = pb_encode(&stream, WatchPacket_fields, packet);
+	size_t message_len = stream.bytes_written;
 
 	if (!status)
 	{
@@ -446,8 +432,25 @@ static void _send_message() {
 	} 
 	else 
 	{
-		send_data(message_length, buffer);
+		send_data(message_len, s_info.buffer);
 	}
+	free(packet);
+}
+
+
+static void _send_message() {
+	WatchPacket *packet = calloc(1, WatchPacket_size);
+	//packet->messages_count = MESSAGES_COUNT;
+
+	for (int i = 0; i < MESSAGES_COUNT; i++) {
+		// struct copy
+		packet->messages[i] = s_info.message_cache[i];
+	}
+
+	// reset cache_idx after copying all the messages
+	s_info.cache_idx = 0;
+
+	ecore_thread_run(_threaded_send_msg, NULL, NULL, packet);
 }
 
 /**
@@ -511,6 +514,10 @@ static void _initialize_sensors(void)
 	}
 }
 
+void setup_ecore() {
+	ecore_thread_max_set(1);
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -525,6 +532,7 @@ int main(int argc, char *argv[])
 	event_callback.pause = app_pause;
 	event_callback.resume = app_resume;
 	event_callback.app_control = app_control;
+	setup_ecore();
 
 	ui_app_add_event_handler(&handlers[APP_EVENT_LOW_BATTERY], APP_EVENT_LOW_BATTERY, ui_app_low_battery, &ad);
 	ui_app_add_event_handler(&handlers[APP_EVENT_LOW_MEMORY], APP_EVENT_LOW_MEMORY, ui_app_low_memory, &ad);
