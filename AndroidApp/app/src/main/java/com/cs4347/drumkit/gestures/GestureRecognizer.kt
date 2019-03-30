@@ -54,7 +54,7 @@ class GestureRecognizer {
      * Pop left for w2 until synced with w1
      */
     private fun syncWindows(w1: LinkedList<SensorMessage>, w2: LinkedList<SensorMessage>) {
-        while (abs(w2.first.timestamp - w1.first.timestamp) > MESSAGE_PERIOD) {
+        while (w2.size > 0 && abs(w2.first.timestamp - w1.first.timestamp) > MESSAGE_PERIOD) {
             w2.removeFirst()
         }
     }
