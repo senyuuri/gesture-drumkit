@@ -32,6 +32,11 @@ android {
             }
         }
     }
+    externalNativeBuild {
+        cmake {
+            path file('../CMakeLists.txt')
+        }
+    }
 }
 
 dependencies {
@@ -44,6 +49,7 @@ dependencies {
     implementation 'com.android.support.constraint:constraint-layout:1.1.3'
     implementation 'com.android.support:design:26.1.0'
     implementation files('libs/accessory-v2.6.1.jar')
+    implementation files('libs/sdk-v1.0.0.jar')
 }
 
 

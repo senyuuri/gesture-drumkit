@@ -17,3 +17,7 @@ Do not forget to edit the \*.options file when editing the \*.proto files
 
 ### Technicalities 
 The android app is a `producer`, while the watch app is a `consumer` under Samsung's terminology. This distinction is found in the code for inter-device communication. See Samsung's official programming [guide](https://developer.samsung.com/galaxy/accessory/guide#) for more info.  
+
+### Sample Playback
+The current mixer implementation on the phone supports ONLY 48,000Hz, 16bit, stereo(2 channels) `.wav` files. To convert from other formats, use the command below:
+> ffmpeg -i splash.wav -ar 48000 -sample_fmt s16 -ac 2 splash-new.wav

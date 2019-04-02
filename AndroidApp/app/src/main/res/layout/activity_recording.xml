@@ -21,6 +21,34 @@
         android:layout_margin="10dp"
         android:text="Stop Recording"/>
 
+
+    <Button
+        android:id="@+id/audio_start_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_margin="10dp"
+        android:text="Test - Audio Start"/>
+
+
+    <Button
+        android:id="@+id/audio_stop_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_margin="10dp"
+        android:text="Test - Audio Stop"/>
+
+    <Button
+        android:id="@+id/audio_insert_beat_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_margin="10dp"
+        android:text="Test - Add Beat"/>
+
+
+
     <TextView
         android:id="@+id/last_recorded_time_tv"
         android:layout_width="wrap_content"

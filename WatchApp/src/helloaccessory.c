@@ -471,6 +471,29 @@ void _data_finalize(void)
 	started_sensors = false;
 }
 
+void _print_sensor_info(sensor_h *s){
+	char *name, *vendor;
+	float min_range = 0.0f, max_range = 0.0f, resolution = 0.0f;
+	int min_interval = 0, fifo_count = 0, max_batch_count = 0;
+
+	sensor_get_name(*s, &name);
+	sensor_get_vendor(s, &vendor);
+//	sensor_get_min_range(s, &min_range);
+//	sensor_get_max_range(s, &max_range);
+//	sensor_get_resolution(s, &resolution);
+//	sensor_get_min_interval(s, &min_interval);
+//	sensor_get_fifo_count(s, &fifo_count);
+//	sensor_get_max_batch_count(s, &max_batch_count);
+	dlog_print(DLOG_DEBUG, TAG, "[sensor_info] name: %s", *name);
+	dlog_print(DLOG_DEBUG, TAG, "[sensor_info] vendor: %s", *vendor);
+//	dlog_print(DLOG_DEBUG, TAG, "[sensor_info] min_range: %.5f", min_range);
+//	dlog_print(DLOG_DEBUG, TAG, "[sensor_info] max_range: %.5f", max_range);
+//	dlog_print(DLOG_DEBUG, TAG, "[sensor_info] resolution: %.5f", resolution);
+//	dlog_print(DLOG_DEBUG, TAG, "[sensor_info] min_interval: %d", min_interval);
+//	dlog_print(DLOG_DEBUG, TAG, "[sensor_info] fifo_count: %d", fifo_count);
+//	dlog_print(DLOG_DEBUG, TAG, "[sensor_info] max_batch_count: %d", max_batch_count);
+}
+
 static void _initialize_sensors(void)
 {
 	dlog_print(DLOG_DEBUG, TAG, "init sensors");
@@ -478,6 +501,7 @@ static void _initialize_sensors(void)
 	int ret;
 	for (int i = 0; i < SENSOR_COUNT; i++) {
 		sensor_type_e st = sensors_used[i];
+		_print_sensor_info(&s_info.sensors[i].handle);
 
 		ret = sensor_get_default_sensor(st, &s_info.sensors[i].handle);
 		if (ret != SENSOR_ERROR_NONE) {
