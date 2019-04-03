@@ -35,7 +35,7 @@ class DrumMachine : public AudioStreamCallback {
 public:
     explicit DrumMachine(AAssetManager&);
 
-    void start();
+    void start(int tempo);
     void stop();
     void setTempo(int tempo);
     void resetTrack(int track_idx);

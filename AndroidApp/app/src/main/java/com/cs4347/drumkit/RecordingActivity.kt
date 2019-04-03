@@ -20,21 +20,24 @@ import android.text.TextWatcher
  * Writes recorded data to sdcard
  */
 class RecordingActivity: Activity() {
-    init
-    {
-        System.loadLibrary("native-lib");
-    }
-
-    private external fun native_onStart(assetManager: AssetManager)
+    private external fun native_onStart(assetManager: AssetManager, tempo: Int)
     private external fun native_onStop()
     private external fun native_insertBeat(channel_idx: Int)
     private external fun native_setTempo(tempo: Int)
+    private var tempo: Int
+
+    init
+    {
+        System.loadLibrary("native-lib");
+        tempo = 60
+    }
+
+
 
     companion object {
         private const val rootDir = "drumkit_record"
         // existing sensors all give 3 data values
         private const val csvHeaders = "sensor_type,timestamp_ms,data1,data2,data3"
-        private const val defaultTempo = 60
     }
 
     private val dataLoggerDisposable = CompositeDisposable()
@@ -78,7 +81,7 @@ class RecordingActivity: Activity() {
                     }
             dataLoggerDisposable.add(sub)
             // start playing audio for metronome
-            native_onStart(assets)
+            native_onStart(assets, tempo)
         }
 
         stop_button.setOnClickListener {
@@ -88,7 +91,7 @@ class RecordingActivity: Activity() {
         }
 
         audio_start_button.setOnClickListener{
-            native_onStart(assets);
+            native_onStart(assets, tempo);
         }
 
         audio_stop_button.setOnClickListener{
@@ -101,8 +104,7 @@ class RecordingActivity: Activity() {
         }
 
         set_tempo_button.setOnClickListener {
-            val tempoVal: Int = tempo_edittext.text.toString().toInt()
-            native_setTempo(tempoVal)
+           tempo = tempo_edittext.text.toString().toInt()
         }
     }
 

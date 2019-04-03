@@ -28,7 +28,7 @@ std::unique_ptr<DrumMachine> dmachine;
 
 JNIEXPORT void JNICALL
 Java_com_cs4347_drumkit_RecordingActivity_native_1onStart(JNIEnv *env, jobject instance,
-                                                                    jobject jAssetManager) {
+                                                                    jobject jAssetManager, jint tempo) {
 
     AAssetManager *assetManager = AAssetManager_fromJava(env, jAssetManager);
     if (assetManager == nullptr) {
@@ -37,7 +37,7 @@ Java_com_cs4347_drumkit_RecordingActivity_native_1onStart(JNIEnv *env, jobject i
     }
 
     dmachine = std::make_unique<DrumMachine>(*assetManager);
-    dmachine->start();
+    dmachine->start(tempo);
 }
 
 
