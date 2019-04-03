@@ -37,6 +37,8 @@ public:
 
     void start(int tempo);
     void stop();
+    void startMetronome();
+    void stopMetronome();
     void setTempo(int tempo);
     void resetTrack(int track_idx);
     void resetAll();
@@ -55,6 +57,7 @@ private:
     int quantizeFrameNum(int64_t frameNum);
     void printBeatMap();
 
+
     AAssetManager& mAssetManager;
     AudioStream *mAudioStream{nullptr};
     std::vector<std::shared_ptr<Player>> mPlayerList;
@@ -66,6 +69,7 @@ private:
     int mBeatMap[kTotalTrack][kTotalBeat] = {{ 0 }};
     int mTempo = 60;
     bool mMetronomeOn = true;
+    bool mMetronomeOnly = false;
 };
 
 

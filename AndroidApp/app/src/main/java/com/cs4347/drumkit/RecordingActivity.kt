@@ -21,7 +21,9 @@ import android.text.TextWatcher
  */
 class RecordingActivity: Activity() {
     private external fun native_onStart(assetManager: AssetManager, tempo: Int)
+    private external fun native_onStartMetronome(assetManager: AssetManager)
     private external fun native_onStop()
+    private external fun native_onStopMetronome()
     private external fun native_insertBeat(channel_idx: Int)
     private external fun native_setTempo(tempo: Int)
     private var tempo: Int
@@ -31,8 +33,6 @@ class RecordingActivity: Activity() {
         System.loadLibrary("native-lib");
         tempo = 60
     }
-
-
 
     companion object {
         private const val rootDir = "drumkit_record"
@@ -80,14 +80,15 @@ class RecordingActivity: Activity() {
                         fileWriter.newLine()
                     }
             dataLoggerDisposable.add(sub)
-            // start playing audio for metronome
-            native_onStart(assets, tempo)
+            // TODO add tempo
+            native_onStartMetronome(assets)
         }
 
         stop_button.setOnClickListener {
             toggleRecordingButtons(false)
             native_onStop();
             dataLoggerDisposable.clear()
+            native_onStopMetronome()
         }
 
         audio_start_button.setOnClickListener{
@@ -95,7 +96,7 @@ class RecordingActivity: Activity() {
         }
 
         audio_stop_button.setOnClickListener{
-            native_onStop();
+            native_onStop()
         }
 
         audio_insert_beat_button.setOnClickListener {
