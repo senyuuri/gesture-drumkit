@@ -68,6 +68,7 @@ void DrumMachine::start() {
         LOGE("Failed to start stream. Error: %s", convertToText(result));
     }
 
+    mMetronomeOnly = false;
     processUpdateEvents();
     preparePlayerEvents();
     printBeatMap();
@@ -80,6 +81,16 @@ void DrumMachine::stop(){
         delete mAudioStream;
         mAudioStream = nullptr;
     }
+}
+
+void DrumMachine::startMetronome() {
+    mMetronomeOnly = true;
+    start();
+}
+
+void DrumMachine::stopMetronome() {
+    mMetronomeOnly = false;
+    stop();
 }
 
 void DrumMachine::setTempo(int tempo) {
@@ -119,7 +130,7 @@ void DrumMachine::processUpdateEvents() {
         int beat_idx = quantizeFrameNum(frameNum);
         mBeatMap[track_idx][beat_idx] = 1;
         mUpdateEvents.pop(nextUpdateEvent);
-        LOGD("[processUpdateEvent] event(%ld,%d)-> beat_idx: %d", frameNum, track_idx, beat_idx);
+        LOGD("[processUpdateEvent] event(%lld,%d)-> beat_idx: %d", frameNum, track_idx, beat_idx);
     }
 }
 
@@ -140,7 +151,7 @@ void DrumMachine::preparePlayerEvents(){
 
     for (int j=0; j < kTotalBeat; j++){
         for (int i=0; i < kTotalTrack; i++){
-            if (mBeatMap[i][j] == 1) {
+            if (mBeatMap[i][j] == 1 && !mMetronomeOnly) {
                 mPlayerEvents.push(std::make_tuple((int64_t) j * frame_per_beat, i));
             }
         }
