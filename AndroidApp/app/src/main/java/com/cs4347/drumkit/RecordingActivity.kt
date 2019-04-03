@@ -25,7 +25,9 @@ class RecordingActivity: Activity() {
     }
 
     private external fun native_onStart(assetManager: AssetManager)
+    private external fun native_onStartMetronome(assetManager: AssetManager)
     private external fun native_onStop()
+    private external fun native_onStopMetronome()
     private external fun native_insertBeat(channel_idx: Int)
 
     companion object {
@@ -66,20 +68,22 @@ class RecordingActivity: Activity() {
                         fileWriter.newLine()
                     }
             dataLoggerDisposable.add(sub)
+            native_onStartMetronome(assets)
         }
 
         stop_button.setOnClickListener {
             stop_button.isEnabled = false
             start_button.isEnabled = true
             dataLoggerDisposable.clear()
+            native_onStopMetronome()
         }
 
         audio_start_button.setOnClickListener{
-            native_onStart(assets);
+            native_onStart(assets)
         }
 
         audio_stop_button.setOnClickListener{
-            native_onStop();
+            native_onStop()
         }
 
         audio_insert_beat_button.setOnClickListener {
