@@ -12,39 +12,49 @@ import java.io.File
 import java.sql.Date
 import java.sql.Timestamp
 import android.content.res.AssetManager
-
+import android.text.Editable
+import android.text.TextWatcher
 
 
 /**
  * Writes recorded data to sdcard
  */
 class RecordingActivity: Activity() {
-    init
-    {
-        System.loadLibrary("native-lib");
-    }
-
-    private external fun native_onStart(assetManager: AssetManager)
+    private external fun native_onStart(assetManager: AssetManager, tempo: Int)
     private external fun native_onStartMetronome(assetManager: AssetManager)
     private external fun native_onStop()
     private external fun native_onStopMetronome()
     private external fun native_insertBeat(channel_idx: Int)
+    private external fun native_setTempo(tempo: Int)
+    private var tempo: Int
+
+    init
+    {
+        System.loadLibrary("native-lib");
+        tempo = 60
+    }
 
     companion object {
-        private val rootDir = "drumkit_record"
+        private const val rootDir = "drumkit_record"
         // existing sensors all give 3 data values
-        private val csvHeaders = "sensor_type,timestamp_ms,data1,data2,data3"
+        private const val csvHeaders = "sensor_type,timestamp_ms,data1,data2,data3"
     }
 
     private val dataLoggerDisposable = CompositeDisposable()
+
+    private fun toggleRecordingButtons(startRecording: Boolean) {
+        stop_button.isEnabled = startRecording
+        start_button.isEnabled = !startRecording
+        audio_start_button.isEnabled = !startRecording
+        audio_stop_button.isEnabled = !startRecording
+        audio_insert_beat_button.isEnabled = !startRecording
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_recording)
 
         start_button.setOnClickListener {
-            stop_button.isEnabled = true
-            start_button.isEnabled = false
 
             val fileName = "${timeNow()}.csv"
             val fileLoc = "${Environment.getExternalStorageDirectory().absolutePath}/$rootDir/$fileName"
@@ -53,6 +63,8 @@ class RecordingActivity: Activity() {
             fileWriter.newLine()
 
             val closeFile = { fileWriter.close() }
+
+            toggleRecordingButtons(true)
 
             val sub = SensorDataSubject.instance.observe()
                     .subscribeOn(Schedulers.io())
@@ -68,18 +80,19 @@ class RecordingActivity: Activity() {
                         fileWriter.newLine()
                     }
             dataLoggerDisposable.add(sub)
+            // TODO add tempo
             native_onStartMetronome(assets)
         }
 
         stop_button.setOnClickListener {
-            stop_button.isEnabled = false
-            start_button.isEnabled = true
+            toggleRecordingButtons(false)
+            native_onStop();
             dataLoggerDisposable.clear()
             native_onStopMetronome()
         }
 
         audio_start_button.setOnClickListener{
-            native_onStart(assets)
+            native_onStart(assets, tempo);
         }
 
         audio_stop_button.setOnClickListener{
@@ -91,6 +104,9 @@ class RecordingActivity: Activity() {
             native_insertBeat(0);
         }
 
+        set_tempo_button.setOnClickListener {
+           tempo = tempo_edittext.text.toString().toInt()
+        }
     }
 
     override fun onStop() {

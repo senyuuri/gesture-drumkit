@@ -23,7 +23,7 @@
 DrumMachine::DrumMachine(AAssetManager &assetManager): mAssetManager(assetManager) {
 }
 
-void DrumMachine::start() {
+void DrumMachine::start(int tempo) {
     std::vector<std::string> asset_list = { "clap.wav", "finger-cymbal.wav", "hihat.wav", "kick.wav", "rim.wav",
             "scratch.wav", "snare.wav", "splash.wav", "metronome.wav"};
     for(std::string wav_file : asset_list){
@@ -68,6 +68,7 @@ void DrumMachine::start() {
         LOGE("Failed to start stream. Error: %s", convertToText(result));
     }
 
+    setTempo(tempo);
     mMetronomeOnly = false;
     processUpdateEvents();
     preparePlayerEvents();
