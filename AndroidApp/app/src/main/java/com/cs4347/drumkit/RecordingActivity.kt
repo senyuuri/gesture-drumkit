@@ -21,7 +21,7 @@ import android.text.TextWatcher
  */
 class RecordingActivity: Activity() {
     private external fun native_onStart(assetManager: AssetManager, tempo: Int)
-    private external fun native_onStartMetronome(assetManager: AssetManager)
+    private external fun native_onStartMetronome(assetManager: AssetManager, tempo: Int)
     private external fun native_onStop()
     private external fun native_onStopMetronome()
     private external fun native_insertBeat(channel_idx: Int)
@@ -80,8 +80,7 @@ class RecordingActivity: Activity() {
                         fileWriter.newLine()
                     }
             dataLoggerDisposable.add(sub)
-            // TODO add tempo
-            native_onStartMetronome(assets)
+            native_onStartMetronome(assets, tempo)
         }
 
         stop_button.setOnClickListener {

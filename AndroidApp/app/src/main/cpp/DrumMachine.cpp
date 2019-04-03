@@ -24,6 +24,8 @@ DrumMachine::DrumMachine(AAssetManager &assetManager): mAssetManager(assetManage
 }
 
 void DrumMachine::start(int tempo) {
+    // Start the drum machine
+    // Note: must call stop() first before calling start() for a second time
     std::vector<std::string> asset_list = { "clap.wav", "finger-cymbal.wav", "hihat.wav", "kick.wav", "rim.wav",
             "scratch.wav", "snare.wav", "splash.wav", "metronome.wav"};
     for(std::string wav_file : asset_list){
@@ -84,12 +86,14 @@ void DrumMachine::stop(){
     }
 }
 
-void DrumMachine::startMetronome() {
+void DrumMachine::startMetronome(int tempo) {
+    // Play only the metronome track
     mMetronomeOnly = true;
-    start();
+    start(tempo);
 }
 
 void DrumMachine::stopMetronome() {
+    // Stop the metronome playback
     mMetronomeOnly = false;
     stop();
 }

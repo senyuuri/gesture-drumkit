@@ -37,7 +37,7 @@ public:
 
     void start(int tempo);
     void stop();
-    void startMetronome();
+    void startMetronome(int tempo);
     void stopMetronome();
     void setTempo(int tempo);
     void resetTrack(int track_idx);
