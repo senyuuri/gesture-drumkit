@@ -103,9 +103,11 @@ class RecordingActivity: Activity() {
             native_insertBeat(0);
         }
 
+        tempo_edittext.setText(60.toString())
         set_tempo_button.setOnClickListener {
            tempo = tempo_edittext.text.toString().toInt()
         }
+
     }
 
     override fun onStop() {

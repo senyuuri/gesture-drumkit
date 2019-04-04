@@ -49,27 +49,30 @@
         android:text="Test - Add Beat"/>
 
     <LinearLayout
-        android:layout_gravity="center_horizontal"
-        android:layout_margin="10dp"
-        android:orientation="horizontal"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="0dp"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal">
 
         <TextView
             android:id="@+id/tempo_tv"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="20sp"
-            android:text="Tempo: "/>
+            android:text="Tempo: "
+            android:textSize="20sp"/>
 
         <EditText
             android:id="@+id/tempo_edittext"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:textSize="20sp"
-            android:layout_margin="10dp"
+            android:layout_marginBottom="0dp"
+            android:layout_marginTop="10dp"
             android:inputType="numberSigned"
+            android:textSize="20sp"
+            android:minWidth="20dp"
             />
 
         <Button
@@ -79,4 +82,12 @@
             android:text="Set Tempo"/>
 
     </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:text="(Applies after current recording)"
+        android:textStyle="italic"
+        android:textSize="12sp"/>
 </LinearLayout>
