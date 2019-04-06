@@ -8,5 +8,6 @@
     <string name="connection_already_exists">Already connected to a device</string>
     <string name="connection_already_disconnected">Already disconnected</string>
     <string name="title_activity_main">MainActivity</string>
+    <string name="tempo_display">Tempo: %d</string>
 
 </resources>

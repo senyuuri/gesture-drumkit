@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    >
+
+    <View
+        android:layout_width="wrap_content"
+        android:layout_height="1dp"
+        android:layout_marginTop="8dp"
+        android:background="#B0D1D1D1"
+        android:paddingEnd="16dp"
+        android:paddingStart="16dp"
+        app:layout_constraintRight_toRightOf="@+id/instruments_rv"
+        app:layout_constraintTop_toBottomOf="@+id/seek_bar"
+        app:layout_constraintTop_toTopOf="@+id/seek_bar"
+        />
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/instruments_rv"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="8dp"
+        android:layout_marginTop="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/seek_bar"
+        tools:listitem="@layout/view_instrument_row"/>
+
+    <View
+        android:id="@+id/seek_line"
+        android:layout_width="2dp"
+        android:layout_height="wrap_content"
+        android:background="#A60099CC"
+        android:paddingTop="8dp"
+        app:layout_constraintLeft_toLeftOf="@+id/seek_bar"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/seek_bar"
+        />
+
+    <!--width: 34(box size)*16 + 4x4(extra box margin) + 32(seekbar padding) = 588 -->
+    <SeekBar
+        android:id="@+id/seek_bar"
+        android:layout_width="592dp"
+        android:layout_height="18dp"
+        android:layout_marginLeft="86dp"
+        android:paddingEnd="16dp"
+        android:paddingStart="16dp"
+        android:progressDrawable="@android:color/transparent"
+        android:progressTint="@android:color/transparent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+
+</android.support.constraint.ConstraintLayout>

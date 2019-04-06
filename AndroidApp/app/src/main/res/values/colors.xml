@@ -2,5 +2,15 @@
 <resources>
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#FF4081</color>
+    <color name="colorAccent">#00ACC1</color>
+    <color name="colorLighterGray">#F8F8F8</color>
+    <color name="colorMiddleGray">#E2E2E2</color>
+    <color name="colorDarkerGray">#999999</color>
+    <color name="colorClap">#F44336</color>
+    <color name="colorFingerCymbal">#FF9800</color>
+    <color name="colorHiHat">#2196F3</color>
+    <color name="colorKick">#FCBE10</color>
+    <color name="colorRim">#4CAF50</color>
+    <color name="colorScratch">#00BCD4</color>
+    <color name="colorSplash">#673AB7</color>
 </resources>

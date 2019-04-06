@@ -28,6 +28,11 @@ class StartingActivity : Activity() {
             startActivity(intent)
         }
 
+        go_to_generate_track_btn.setOnClickListener {
+            val intent = Intent(this, GenerateTrackActivity::class.java)
+            startActivity(intent)
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             getPermissionToWriteToFile()
         }

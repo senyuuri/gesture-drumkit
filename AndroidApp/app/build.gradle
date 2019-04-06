@@ -53,6 +53,7 @@ dependencies {
 }
 
 
+
 protobuf {
     protoc {
         // You still need protoc like in the non-Android case

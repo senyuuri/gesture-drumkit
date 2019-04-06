@@ -21,4 +21,13 @@
         android:layout_centerHorizontal="true"
         android:layout_below="@id/hi_filler"
         android:text="Go to recording activity"/>
+
+    <Button
+        android:id="@+id/go_to_generate_track_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/hi_filler"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="120dp"
+        android:text="Go to generate track activity"/>
 </RelativeLayout>
