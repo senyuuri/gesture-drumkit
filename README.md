@@ -1,6 +1,10 @@
 # gesture-drumkit
 a real-time gesture based interactive drum kit
 
+### Setup
+Install respective sdks. Watch sdk is 2.3.2 (check the files to verify)
+If using android emulator, ensure resolution is 1080 x 2340 pixels, or a similar aspect ratio
+
 ### Communication Protocol
 The watch app & android app communicate through protobuf.  
 The watch app in particular uses [Nanopb](https://github.com/nanopb/nanopb).  
