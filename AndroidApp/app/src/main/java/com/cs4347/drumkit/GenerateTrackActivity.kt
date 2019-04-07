@@ -38,7 +38,6 @@ class GenerateTrackActivity : Activity() {
         private const val tempoStep = 10
         // currently an arbitrary value, ensure it is between 1000/(24 to 120Hz), standard refresh rate
         private const val seekBarUpdatePeriod = 16L
-        // 30ms
         private const val seekBarSnapDuration = 200L
     }
 
@@ -103,6 +102,7 @@ class GenerateTrackActivity : Activity() {
             pause()
         }
 
+        // pause when seekbar is adjusted by user
         drumkit_instruments.setSeekBarOnChangeListener(object: SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {}
 
@@ -130,6 +130,9 @@ class GenerateTrackActivity : Activity() {
 
         setTempoText()
         setButtons(false)
+
+        // try to make seekbar range a multiple of our update frequency (big enough should be fine)
+        // there is no particularly good reason for using the existing combination
         drumkit_instruments.seekBar.max =
                 60 * 10 * tempo * DrumKitInstrumentsAdapter.COLUMNS * seekBarUpdatePeriod.toInt()
     }
@@ -251,6 +254,10 @@ class GenerateTrackActivity : Activity() {
 
 }
 
+/**
+ * Extension method to shift seekbar's progress with an animation
+ * Returns a completable that sends an event when animation is complete
+ */
 fun SeekBar.shiftTo(destProgress: Int, duration: Long): Completable {
     val animationSubject = CompletableSubject.create()
     return animationSubject.doOnSubscribe {
