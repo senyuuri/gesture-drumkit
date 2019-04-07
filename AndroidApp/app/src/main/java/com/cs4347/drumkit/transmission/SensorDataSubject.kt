@@ -51,6 +51,10 @@ class SensorDataSubject private constructor() {
         private val TAG = "SensorDataSubject"
     }
 
+    /**
+     * Reset to refresh internal subject
+     * A subject cannot send data when it has completed, or thrown an error.
+     */
     private fun reset() {
         if (!subject.hasComplete() || !subject.hasThrowable()) {
             Log.e(TAG, "SensorDataSubject is abruptly reset")

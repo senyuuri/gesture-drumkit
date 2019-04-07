@@ -86,6 +86,7 @@ class ReceiverService(context: Context) : SAAgentV2(TAG, context, SASOCKET_CLASS
         if (result == SAAgentV2.CONNECTION_SUCCESS) {
             val connection = socket as ServiceConnection
 
+            // make a new connection
             connection.listener = SensorDataSubject.instance.serviceConnectionListener
 
         } else if (result == SAAgentV2.CONNECTION_ALREADY_EXIST) {

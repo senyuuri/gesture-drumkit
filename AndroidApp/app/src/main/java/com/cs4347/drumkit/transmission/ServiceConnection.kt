@@ -9,9 +9,10 @@ import com.samsung.android.sdk.accessory.SASocket
  */
 class ServiceConnection : SASocket(ServiceConnection::class.java.name) {
     var listener: ServiceConnectionListener? = null
-    set(value) {
-        value?.onInit()
-        field = value
+    set(it) {
+        // tell listener that we have initialized a connection
+        it?.onInit()
+        field = it
     }
 
     companion object {
