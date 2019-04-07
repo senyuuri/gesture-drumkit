@@ -23,7 +23,7 @@
 DrumMachine::DrumMachine(AAssetManager &assetManager): mAssetManager(assetManager) {
 }
 
-void DrumMachine::start(int tempo) {
+void DrumMachine::start(int tempo, int beat_idx) {
     // Start the drum machine
     // Note: must call stop() first before calling start() for a second time
     std::vector<std::string> asset_list = { "clap.wav", "finger-cymbal.wav", "hihat.wav", "kick.wav", "rim.wav",
@@ -53,6 +53,13 @@ void DrumMachine::start(int tempo) {
     builder.setPerformanceMode(PerformanceMode::LowLatency);
     builder.setSharingMode(SharingMode::Exclusive);
 
+
+    // Initialise tempo, starting beat etc.
+    setTempo(tempo);
+    mMetronomeOnly = false;
+    refreshLoop();
+    setBeat(beat_idx);
+
     Result result = builder.openStream(&mAudioStream);
     if (result != Result::OK){
         LOGE("Failed to open stream. Error: %s", convertToText(result));
@@ -65,13 +72,15 @@ void DrumMachine::start(int tempo) {
         LOGW("Failed to set buffer size. Error: %s", convertToText(setBufferSizeResult.error()));
     }
 
+    // Start mixer
     result = mAudioStream->requestStart();
     if (result != Result::OK){
         LOGE("Failed to start stream. Error: %s", convertToText(result));
     }
+}
 
-    setTempo(tempo);
-    mMetronomeOnly = false;
+void DrumMachine::refreshLoop() {
+    // process all pending events and initialise a loop
     processUpdateEvents();
     preparePlayerEvents();
     printBeatMap();
@@ -89,7 +98,7 @@ void DrumMachine::stop(){
 void DrumMachine::startMetronome(int tempo) {
     // Play only the metronome track
     mMetronomeOnly = true;
-    start(tempo);
+    start(tempo, 0);
 }
 
 void DrumMachine::stopMetronome() {
@@ -100,6 +109,15 @@ void DrumMachine::stopMetronome() {
 
 void DrumMachine::setTempo(int tempo) {
     mTempo = tempo;
+}
+
+void DrumMachine::setBeat(int beat_idx){
+    if (beat_idx < 0 || beat_idx >= kTotalBeat) {
+        beat_idx = 0;
+    }
+    int64_t frameNum = quantizeBeatIdx(beat_idx);
+    mCurrentFrame = frameNum;
+    LOGD("setBeat: beat %d => mCurrentFrame %lld", beat_idx, frameNum);
 }
 
 void DrumMachine::resetTrack(int track_idx) {
@@ -116,12 +134,13 @@ void DrumMachine::resetAll() {
     }
 }
 
-void DrumMachine::insertBeat(int track_idx) {
+int DrumMachine::insertBeat(int track_idx) {
     // TODO check audio stream state
     mPlayerList[track_idx]->setPlaying(true);
     // update beat map at the end of the loop
     int64_t currentFrame = mCurrentFrame;
     mUpdateEvents.push(std::make_tuple(currentFrame, track_idx));
+    return quantizeFrameNum(currentFrame);
 }
 
 void DrumMachine::processUpdateEvents() {
@@ -140,11 +159,22 @@ void DrumMachine::processUpdateEvents() {
 }
 
 int DrumMachine::quantizeFrameNum(int64_t frameNum) {
-    /* returns the beat idx of a given frameNum, after quantization*/
+    /* Return the beat idx of a given frameNum, after quantization*/
     float frame_per_beat = round((60.0f / mTempo) * kSampleRateHz);
     int beat_idx = static_cast<int>(round((float)frameNum / frame_per_beat));
     return beat_idx;
 }
+
+int64_t DrumMachine::quantizeBeatIdx(int beat_idx) {
+    /* Return the frame number of a given beat */
+    if (beat_idx < 0 || beat_idx >= kTotalBeat) {
+        beat_idx = 0;
+    }
+    float frame_per_beat = round((60.0f / mTempo) * kSampleRateHz);
+    int64_t frameNum = static_cast<int64_t>(beat_idx * frame_per_beat);
+    return frameNum;
+}
+
 
 
 void DrumMachine::preparePlayerEvents(){
@@ -204,9 +234,7 @@ DataCallbackResult DrumMachine::onAudioReady(AudioStream *oboeStream, void *audi
 
         if ( mCurrentFrame > loop_duration ) {
             mCurrentFrame = 0;
-            processUpdateEvents();
-            preparePlayerEvents();
-            printBeatMap();
+            refreshLoop();
         }
 
     }

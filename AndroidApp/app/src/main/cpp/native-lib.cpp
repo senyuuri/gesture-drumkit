@@ -26,9 +26,12 @@ extern "C" {
 
 std::unique_ptr<DrumMachine> dmachine;
 
+/*
+ * Export to RecordingActivity
+ */
 JNIEXPORT void JNICALL
 Java_com_cs4347_drumkit_RecordingActivity_native_1onStart(JNIEnv *env, jobject instance,
-                                                                    jobject jAssetManager, jint tempo) {
+        jobject jAssetManager, jint tempo, jint beatIdx) {
 
     AAssetManager *assetManager = AAssetManager_fromJava(env, jAssetManager);
     if (assetManager == nullptr) {
@@ -37,7 +40,7 @@ Java_com_cs4347_drumkit_RecordingActivity_native_1onStart(JNIEnv *env, jobject i
     }
 
     dmachine = std::make_unique<DrumMachine>(*assetManager);
-    dmachine->start(tempo);
+    dmachine->start(tempo, beatIdx);
 }
 
 JNIEXPORT void JNICALL
@@ -83,9 +86,9 @@ Java_com_cs4347_drumkit_RecordingActivity_native_1resetAll(JNIEnv *env, jobject 
     dmachine->resetAll();
 }
 
-JNIEXPORT void JNICALL
+JNIEXPORT jint JNICALL
 Java_com_cs4347_drumkit_RecordingActivity_native_1insertBeat(JNIEnv *env, jobject instance, jint track_idx) {
-    dmachine->insertBeat(track_idx);
+    return dmachine->insertBeat(track_idx);
 }
 
 JNIEXPORT void JNICALL
@@ -94,4 +97,37 @@ Java_com_cs4347_drumkit_RecordingActivity_native_1toggleMetronome(JNIEnv *env, j
 }
 
 
+/*
+ * Export to GenerateTrackActivity
+ */
+JNIEXPORT void JNICALL
+Java_com_cs4347_drumkit_GenerateTrackActivity_native_1onStart(JNIEnv *env, jobject instance,
+        jobject jAssetManager, jint tempo, jint beatIdx) {
+
+    AAssetManager *assetManager = AAssetManager_fromJava(env, jAssetManager);
+    if (assetManager == nullptr) {
+        LOGE("Could not obtain the AAssetManager");
+        return;
+    }
+
+    dmachine = std::make_unique<DrumMachine>(*assetManager);
+    dmachine->start(tempo, beatIdx);
+}
+
+JNIEXPORT void JNICALL
+Java_com_cs4347_drumkit_GenerateTrackActivity_native_1onStop(JNIEnv *env, jobject instance) {
+    dmachine->stop();
+}
+
+
+JNIEXPORT void JNICALL
+Java_com_cs4347_drumkit_GenerateTrackActivity_native_1setTempo(JNIEnv *env, jobject instance, jint tempo) {
+    dmachine->setTempo(tempo);
+}
+
+
+JNIEXPORT jint JNICALL
+Java_com_cs4347_drumkit_GenerateTrackActivity_native_1insertBeat(JNIEnv *env, jobject instance, jint track_idx) {
+    return dmachine->insertBeat(track_idx);
+}
 }

@@ -35,14 +35,15 @@ class DrumMachine : public AudioStreamCallback {
 public:
     explicit DrumMachine(AAssetManager&);
 
-    void start(int tempo);
+    void start(int tempo, int beat_idx);
     void stop();
     void startMetronome(int tempo);
     void stopMetronome();
     void setTempo(int tempo);
+    void setBeat(int beat_idx);
     void resetTrack(int track_idx);
     void resetAll();
-    void insertBeat(int track_idx);
+    int insertBeat(int track_idx);
     void toggleMetronome();
     // void onSurfaceChanged(int widthInPixels, int heightInPixels);
 
@@ -55,7 +56,9 @@ private:
     void preparePlayerEvents();
     void processUpdateEvents();
     int quantizeFrameNum(int64_t frameNum);
+    int64_t quantizeBeatIdx(int beat_idx);
     void printBeatMap();
+    void refreshLoop();
 
 
     AAssetManager& mAssetManager;
