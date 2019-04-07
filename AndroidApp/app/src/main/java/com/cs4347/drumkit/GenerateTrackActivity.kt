@@ -107,7 +107,6 @@ class GenerateTrackActivity : Activity() {
 
         record.setOnClickListener {
             // TODO start ML recognizer here
-            // TODO: tell drum machine to add beat to selected row inside
             play()
         }
 
@@ -165,8 +164,9 @@ class GenerateTrackActivity : Activity() {
             drumkit_instruments.instrumentsRecycler.getChildAt(0).performClick()
         }
         setButtons(true)
+        // TODO disable beat input from gestures in play mode
+        debug_add_beat.isEnabled = false
         snapAndStartSeekBar()
-        native_onStart(tempo, calcDestinationBeat())
     }
 
     private fun pause() {
@@ -179,8 +179,8 @@ class GenerateTrackActivity : Activity() {
 
     override fun onStop() {
         disposables.clear()
-        super.onStop()
         native_onStop()
+        super.onStop()
     }
 
     private fun setSelectedInstrumentBeat(col: Int, activate: Boolean) {
@@ -247,7 +247,7 @@ class GenerateTrackActivity : Activity() {
         disposables.add(drumkit_instruments.seekBar.shiftTo(destProgress, seekBarSnapDuration)
                 .subscribeOn(AndroidSchedulers.mainThread())
                 .subscribe {
-                    // TODO: start drum machine when code is available
+                    native_onStart(tempo, calcDestinationBeat())
                     startSeekBarMovement()
                 })
     }
