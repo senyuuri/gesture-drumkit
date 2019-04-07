@@ -33,7 +33,8 @@ import android.view.View
 
 
 class GenerateTrackActivity : Activity() {
-    private external fun native_onStart(assetManager: AssetManager, tempo: Int, beatIdx: Int)
+    private external fun native_onInit(assetManager: AssetManager)
+    private external fun native_onStart(tempo: Int, beatIdx: Int)
     private external fun native_onStop()
     private external fun native_insertBeat(channel_idx: Int): Int
     private external fun native_setTempo(tempo: Int)
@@ -154,6 +155,9 @@ class GenerateTrackActivity : Activity() {
         setButtons(false)
         drumkit_instruments.seekBar.max =
                 60 * 10 * tempo * DrumKitInstrumentsAdapter.COLUMNS * seekBarUpdatePeriod.toInt()
+
+        // initialise DrumMachine
+        native_onInit(assets)
     }
 
     private fun play() {
@@ -162,7 +166,7 @@ class GenerateTrackActivity : Activity() {
         }
         setButtons(true)
         snapAndStartSeekBar()
-        native_onStart(assets, tempo, calcDestinationBeat())
+        native_onStart(tempo, calcDestinationBeat())
     }
 
     private fun pause() {

@@ -30,8 +30,7 @@ std::unique_ptr<DrumMachine> dmachine;
  * Export to RecordingActivity
  */
 JNIEXPORT void JNICALL
-Java_com_cs4347_drumkit_RecordingActivity_native_1onStart(JNIEnv *env, jobject instance,
-        jobject jAssetManager, jint tempo, jint beatIdx) {
+Java_com_cs4347_drumkit_RecordingActivity_native_1onInit(JNIEnv *env, jobject instance, jobject jAssetManager) {
 
     AAssetManager *assetManager = AAssetManager_fromJava(env, jAssetManager);
     if (assetManager == nullptr) {
@@ -40,6 +39,11 @@ Java_com_cs4347_drumkit_RecordingActivity_native_1onStart(JNIEnv *env, jobject i
     }
 
     dmachine = std::make_unique<DrumMachine>(*assetManager);
+    dmachine->init();
+}
+
+JNIEXPORT void JNICALL
+Java_com_cs4347_drumkit_RecordingActivity_native_1onStart(JNIEnv *env, jobject instance, jint tempo, jint beatIdx) {
     dmachine->start(tempo, beatIdx);
 }
 
@@ -101,8 +105,7 @@ Java_com_cs4347_drumkit_RecordingActivity_native_1toggleMetronome(JNIEnv *env, j
  * Export to GenerateTrackActivity
  */
 JNIEXPORT void JNICALL
-Java_com_cs4347_drumkit_GenerateTrackActivity_native_1onStart(JNIEnv *env, jobject instance,
-        jobject jAssetManager, jint tempo, jint beatIdx) {
+Java_com_cs4347_drumkit_GenerateTrackActivity_native_1onInit(JNIEnv *env, jobject instance, jobject jAssetManager) {
 
     AAssetManager *assetManager = AAssetManager_fromJava(env, jAssetManager);
     if (assetManager == nullptr) {
@@ -111,8 +114,14 @@ Java_com_cs4347_drumkit_GenerateTrackActivity_native_1onStart(JNIEnv *env, jobje
     }
 
     dmachine = std::make_unique<DrumMachine>(*assetManager);
+    dmachine->init();
+}
+
+JNIEXPORT void JNICALL
+Java_com_cs4347_drumkit_GenerateTrackActivity_native_1onStart(JNIEnv *env, jobject instance, jint tempo, jint beatIdx) {
     dmachine->start(tempo, beatIdx);
 }
+
 
 JNIEXPORT void JNICALL
 Java_com_cs4347_drumkit_GenerateTrackActivity_native_1onStop(JNIEnv *env, jobject instance) {

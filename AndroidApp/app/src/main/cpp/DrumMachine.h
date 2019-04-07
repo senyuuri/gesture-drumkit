@@ -34,7 +34,7 @@ using namespace oboe;
 class DrumMachine : public AudioStreamCallback {
 public:
     explicit DrumMachine(AAssetManager&);
-
+    void init();
     void start(int tempo, int beat_idx);
     void stop();
     void startMetronome(int tempo);

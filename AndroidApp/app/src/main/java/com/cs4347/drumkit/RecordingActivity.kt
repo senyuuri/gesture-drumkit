@@ -20,8 +20,9 @@ import android.text.TextWatcher
  * Writes recorded data to sdcard
  */
 class RecordingActivity: Activity() {
-    private external fun native_onStart(assetManager: AssetManager, tempo: Int,  beatIdx: Int)
-    private external fun native_onStartMetronome(assetManager: AssetManager, tempo: Int)
+    private external fun native_onInit(assetManager: AssetManager)
+    private external fun native_onStart(tempo: Int,  beatIdx: Int)
+    private external fun native_onStartMetronome(tempo: Int)
     private external fun native_onStop()
     private external fun native_onStopMetronome()
     private external fun native_insertBeat(channel_idx: Int)
@@ -80,7 +81,7 @@ class RecordingActivity: Activity() {
                         fileWriter.newLine()
                     }
             dataLoggerDisposable.add(sub)
-            native_onStartMetronome(assets, tempo)
+            native_onStartMetronome(tempo)
         }
 
         stop_button.setOnClickListener {
@@ -91,7 +92,7 @@ class RecordingActivity: Activity() {
         }
 
         audio_start_button.setOnClickListener{
-            native_onStart(assets, tempo, 0);
+            native_onStart(tempo, 0);
         }
 
         audio_stop_button.setOnClickListener{

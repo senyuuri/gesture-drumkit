@@ -23,16 +23,14 @@
 DrumMachine::DrumMachine(AAssetManager &assetManager): mAssetManager(assetManager) {
 }
 
-void DrumMachine::start(int tempo, int beat_idx) {
-    // Start the drum machine
-    // Note: must call stop() first before calling start() for a second time
+void DrumMachine::init(){
     std::vector<std::string> asset_list = { "clap.wav", "finger-cymbal.wav", "hihat.wav", "kick.wav", "rim.wav",
-            "scratch.wav", "snare.wav", "splash.wav", "metronome.wav"};
+                                            "scratch.wav", "snare.wav", "splash.wav", "metronome.wav"};
     for(std::string wav_file : asset_list){
         // Load the RAW PCM data files for both the sample sound and backing track into memory.
         std::shared_ptr<AAssetDataSource> mSampleSource(AAssetDataSource::newFromAssetManager(mAssetManager,
-                                                                                            wav_file.c_str(),
-                                                                                            oboe::ChannelCount::Stereo));
+                                                                                              wav_file.c_str(),
+                                                                                              oboe::ChannelCount::Stereo));
         if (mSampleSource == nullptr){
             LOGE("Could not load source data for kick sound");
             return;
@@ -43,6 +41,11 @@ void DrumMachine::start(int tempo, int beat_idx) {
         // simultaneously using a single audio stream.
         mMixer.addTrack(mSamplePlayer);
     }
+}
+
+void DrumMachine::start(int tempo, int beat_idx) {
+    // Start the drum machine
+    // Note: must call stop() first before calling start() for a second time
 
     // Create a builder
     AudioStreamBuilder builder;
@@ -52,7 +55,6 @@ void DrumMachine::start(int tempo, int beat_idx) {
     builder.setCallback(this);
     builder.setPerformanceMode(PerformanceMode::LowLatency);
     builder.setSharingMode(SharingMode::Exclusive);
-
 
     // Initialise tempo, starting beat etc.
     setTempo(tempo);
