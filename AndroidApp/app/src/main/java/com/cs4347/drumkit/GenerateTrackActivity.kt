@@ -28,10 +28,22 @@ import android.view.animation.DecelerateInterpolator
 import android.animation.ObjectAnimator
 import android.animation.Animator
 import android.R.attr.animation
+import android.content.res.AssetManager
 import android.view.View
 
 
 class GenerateTrackActivity : Activity() {
+    private external fun native_onInit(assetManager: AssetManager)
+    private external fun native_onStart(tempo: Int, beatIdx: Int)
+    private external fun native_onStop()
+    private external fun native_insertBeat(channel_idx: Int): Int
+    private external fun native_setTempo(tempo: Int)
+
+    init
+    {
+        System.loadLibrary("native-lib")
+    }
+
 
     companion object {
         private val tempoRange = Pair(60, 120)
@@ -89,12 +101,13 @@ class GenerateTrackActivity : Activity() {
         }
 
         play.setOnClickListener {
+            // TODO disable beat input from gestures in play mode
+            debug_add_beat.isEnabled = false
             play()
         }
 
         record.setOnClickListener {
             // TODO start ML recognizer here
-            // TODO: tell drum machine to add beat to selected row inside
             play()
         }
 
@@ -121,10 +134,21 @@ class GenerateTrackActivity : Activity() {
         debug_add_beat.apply {
             visibility = View.VISIBLE
             setOnClickListener {
-                // TODO: tell drum machine to add beat to selected row
-                Toast.makeText(this@GenerateTrackActivity,
-                        "WIP, connect me to drum machine!",
-                        Toast.LENGTH_SHORT).show()
+                var channelIdx = selectedInstrumentRow;
+                if (channelIdx == null) {
+                    Toast.makeText(this@GenerateTrackActivity,
+                            "Select a track first!",
+                            Toast.LENGTH_SHORT).show()
+                } else {
+                    var beatIdx = native_insertBeat(channelIdx)
+                    setSelectedInstrumentBeat(beatIdx, true)
+                    Toast.makeText(this@GenerateTrackActivity,
+                            "Beat added!",
+                            Toast.LENGTH_SHORT).show()
+
+                }
+
+
             }
         }
 
@@ -135,6 +159,9 @@ class GenerateTrackActivity : Activity() {
         // there is no particularly good reason for using the existing combination
         drumkit_instruments.seekBar.max =
                 60 * 10 * tempo * DrumKitInstrumentsAdapter.COLUMNS * seekBarUpdatePeriod.toInt()
+
+        // initialise DrumMachine
+        native_onInit(assets)
     }
 
     private fun play() {
@@ -147,12 +174,16 @@ class GenerateTrackActivity : Activity() {
 
     private fun pause() {
         // todo: stop ml if possible
+        debug_add_beat.isEnabled = true
         setButtons(false)
         stopSeekBarMovement()
+        // todo: add native_pause
+        native_onStop()
     }
 
     override fun onStop() {
         disposables.clear()
+        native_onStop()
         super.onStop()
     }
 
@@ -186,8 +217,7 @@ class GenerateTrackActivity : Activity() {
         seekBarMovementDisposable?.dispose()
     }
 
-    private fun snapAndStartSeekBar() {
-        // snap seekbar to nearest beat
+    private fun calcDestinationBeat(): Int {
         val timePerBeatMs = 60*1000/tempo.toFloat()
         val totalDuration: Float = timePerBeatMs * DrumKitInstrumentsAdapter.COLUMNS
         val timePerPercentage: Float = totalDuration / drumkit_instruments.seekBar.max
@@ -205,14 +235,23 @@ class GenerateTrackActivity : Activity() {
             true -> leftBeatIdx
             false -> (leftBeatIdx + 1) % DrumKitInstrumentsAdapter.COLUMNS
         }
+        return destinationBeat.toInt()
+    }
 
+    private fun snapAndStartSeekBar() {
+        // snap seekbar to nearest beat
+        val timePerBeatMs = 60*1000/tempo.toFloat()
+        val totalDuration: Float = timePerBeatMs * DrumKitInstrumentsAdapter.COLUMNS
+        val timePerPercentage: Float = totalDuration / drumkit_instruments.seekBar.max
+        val percentagePerTime: Float = 1/timePerPercentage
+        val destinationBeat = calcDestinationBeat()
         val destProgress = (destinationBeat * timePerBeatMs * percentagePerTime).roundToInt()
 
         // start seekbar movement after animation
         disposables.add(drumkit_instruments.seekBar.shiftTo(destProgress, seekBarSnapDuration)
                 .subscribeOn(AndroidSchedulers.mainThread())
                 .subscribe {
-                    // TODO: start drum machine when code is available
+                    native_onStart(tempo, calcDestinationBeat())
                     startSeekBarMovement()
                 })
     }

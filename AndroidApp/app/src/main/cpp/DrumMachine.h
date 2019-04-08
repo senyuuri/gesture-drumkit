@@ -21,6 +21,7 @@
 #include <oboe/Oboe.h>
 #include <tuple>
 #include <vector>
+#include <queue>
 #include <string>
 
 #include "audio/Mixer.h"
@@ -34,18 +35,18 @@ using namespace oboe;
 class DrumMachine : public AudioStreamCallback {
 public:
     explicit DrumMachine(AAssetManager&);
-
-    void start(int tempo);
+    void init();
+    void start(int tempo, int beatIdx);
     void stop();
     void startMetronome(int tempo);
     void stopMetronome();
     void setTempo(int tempo);
+    void setBeat(int beat_idx);
     void resetTrack(int track_idx);
     void resetAll();
-    void insertBeat(int track_idx);
+    int insertBeat(int track_idx);
     void toggleMetronome();
     // void onSurfaceChanged(int widthInPixels, int heightInPixels);
-
 
     // Inherited from oboe::AudioStreamCallback
     DataCallbackResult
@@ -55,7 +56,9 @@ private:
     void preparePlayerEvents();
     void processUpdateEvents();
     int quantizeFrameNum(int64_t frameNum);
+    int64_t quantizeBeatIdx(int beat_idx);
     void printBeatMap();
+    void refreshLoop();
 
 
     AAssetManager& mAssetManager;
@@ -63,11 +66,12 @@ private:
     std::vector<std::shared_ptr<Player>> mPlayerList;
     Mixer mMixer;
 
-    LockFreeQueue<std::tuple<int64_t, int>, kMaxQueueItems> mPlayerEvents;
-    LockFreeQueue<std::tuple<int64_t, int>, kMaxQueueItems> mUpdateEvents;
+    std::queue<std::tuple<int64_t, int>> mPlayerEvents;
+    std::queue<std::tuple<int64_t, int>> mUpdateEvents;
     std::atomic<int64_t> mCurrentFrame { 0 };
     int mBeatMap[kTotalTrack][kTotalBeat] = {{ 0 }};
     int mTempo = 60;
+    int mBeatStartIndex = 0;
     bool mMetronomeOn = true;
     bool mMetronomeOnly = false;
 };
