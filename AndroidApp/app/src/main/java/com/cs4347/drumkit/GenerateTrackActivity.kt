@@ -102,6 +102,8 @@ class GenerateTrackActivity : Activity() {
         }
 
         play.setOnClickListener {
+            // TODO disable beat input from gestures in play mode
+            debug_add_beat.isEnabled = false
             play()
         }
 
@@ -164,13 +166,12 @@ class GenerateTrackActivity : Activity() {
             drumkit_instruments.instrumentsRecycler.getChildAt(0).performClick()
         }
         setButtons(true)
-        // TODO disable beat input from gestures in play mode
-        debug_add_beat.isEnabled = false
         snapAndStartSeekBar()
     }
 
     private fun pause() {
         // todo: stop ml if possible
+        debug_add_beat.isEnabled = true
         setButtons(false)
         stopSeekBarMovement()
         // todo: add native_pause

@@ -47,7 +47,6 @@ public:
     void toggleMetronome();
     // void onSurfaceChanged(int widthInPixels, int heightInPixels);
 
-
     // Inherited from oboe::AudioStreamCallback
     DataCallbackResult
     onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames) override;
@@ -71,6 +70,7 @@ private:
     std::atomic<int64_t> mCurrentFrame { 0 };
     int mBeatMap[kTotalTrack][kTotalBeat] = {{ 0 }};
     int mTempo = 60;
+    int mBeatStartIndex = 0;
     bool mMetronomeOn = true;
     bool mMetronomeOnly = false;
 };

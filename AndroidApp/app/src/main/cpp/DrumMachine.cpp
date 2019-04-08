@@ -58,9 +58,9 @@ void DrumMachine::start(int tempo, int beat_idx) {
 
     // Initialise tempo, starting beat etc.
     setTempo(tempo);
+    setBeat(beat_idx);
     mMetronomeOnly = false;
     refreshLoop();
-    setBeat(beat_idx);
 
     Result result = builder.openStream(&mAudioStream);
     if (result != Result::OK){
@@ -117,9 +117,11 @@ void DrumMachine::setBeat(int beat_idx){
     if (beat_idx < 0 || beat_idx >= kTotalBeat) {
         beat_idx = 0;
     }
+    // save beat index for calculation later
+    mBeatStartIndex = beat_idx;
     int64_t frameNum = quantizeBeatIdx(beat_idx);
     mCurrentFrame = frameNum;
-    LOGD("setBeat: beat %d => mCurrentFrame %lld", beat_idx, frameNum);
+    LOGD("setBeat: beat %d => mCurrentFrame %ld", beat_idx, frameNum);
 }
 
 void DrumMachine::resetTrack(int track_idx) {
@@ -156,7 +158,7 @@ void DrumMachine::processUpdateEvents() {
         int beat_idx = quantizeFrameNum(frameNum);
         mBeatMap[track_idx][beat_idx] = 1;
         mUpdateEvents.pop(nextUpdateEvent);
-        LOGD("[processUpdateEvent] event(%lld,%d)-> beat_idx: %d", frameNum, track_idx, beat_idx);
+        LOGD("[processUpdateEvent] event(%ld,%d)-> beat_idx: %d", frameNum, track_idx, beat_idx);
     }
 }
 
@@ -186,14 +188,20 @@ void DrumMachine::preparePlayerEvents(){
     // zero.
     int frame_per_beat =  static_cast<int>(round((60.0f / mTempo) * kSampleRateHz));
 
-    for (int j=0; j < kTotalBeat; j++){
+    for (int j=mBeatStartIndex; j < kTotalBeat; j++){
         for (int i=0; i < kTotalTrack; i++){
             if (mBeatMap[i][j] == 1 && !mMetronomeOnly) {
                 mPlayerEvents.push(std::make_tuple((int64_t) j * frame_per_beat, i));
+                LOGD("Add PlayerEvent: ch%d, beat%d, frame %ld", j, i, (int64_t) j * frame_per_beat);
             }
         }
         // always add metronome events
         mPlayerEvents.push(std::make_tuple((int64_t) j * frame_per_beat, kMetronomeTrackIdx));
+        LOGD("Add PlayerEvent: ch-metro, beat%d, frame %ld", j, (int64_t) j * frame_per_beat);
+    }
+    // reset starting beat in the next round so we can start from the beginning again
+    if (mBeatStartIndex != 0){
+        mBeatStartIndex = 0;
     }
 }
 
@@ -218,14 +226,26 @@ void DrumMachine::toggleMetronome() {
 
 DataCallbackResult DrumMachine::onAudioReady(AudioStream *oboeStream, void *audioData, int32_t numFrames) {
     std::tuple<int64_t, int> nextClapEvent;
+    std::tuple<int64_t, int> tmpClapEvent;
 
     int32_t loop_duration = kTotalBeat * static_cast<int>(round((60.0f / mTempo) * kSampleRateHz));
 
     for (int i = 0; i < numFrames; ++i) {
         // play sample sounds
+        int64_t tmpFrame = mCurrentFrame;
+        // DEBUG
+        if (tmpFrame % kSampleRateHz == 0){
+            mPlayerEvents.peek(tmpClapEvent);
+            int64_t nextFrame = std::get<0>(tmpClapEvent);
+            int nextTrack = std::get<1>(tmpClapEvent);
+            LOGD("ON_BEAT %ld, nextClapEvent(%d, %ld)", tmpFrame, nextTrack, nextFrame);
+        }
+
         while (mPlayerEvents.peek(nextClapEvent) && mCurrentFrame == std::get<0>(nextClapEvent)) {
             int track_idx = std::get<1>(nextClapEvent);
             if ((track_idx != kMetronomeTrackIdx) || (track_idx == kMetronomeTrackIdx && mMetronomeOn)){
+                // DEBUG
+                LOGD("onAudioReady - Play ch%d at %ld", track_idx, tmpFrame);
                 mPlayerList[std::get<1>(nextClapEvent)]->setPlaying(true);
                 mPlayerEvents.pop(nextClapEvent);
             }
