@@ -36,7 +36,7 @@ class DrumMachine : public AudioStreamCallback {
 public:
     explicit DrumMachine(AAssetManager&);
     void init();
-    void start(int tempo, int beat_idx);
+    void start(int tempo, int beatIdx);
     void stop();
     void startMetronome(int tempo);
     void stopMetronome();
