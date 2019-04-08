@@ -83,6 +83,7 @@ void DrumMachine::start(int tempo, int beat_idx) {
 
 void DrumMachine::refreshLoop() {
     // process all pending events and initialise a loop
+    mPlayerEvents = {};
     processUpdateEvents();
     preparePlayerEvents();
     printBeatMap();
@@ -152,12 +153,14 @@ void DrumMachine::processUpdateEvents() {
     int frame_per_beat =  static_cast<int>(round((60.0f / mTempo) * kSampleRateHz));
     LOGD("[processUpdateEvent] using frames_per_beat: %d)", frame_per_beat);
 
-    while (mUpdateEvents.peek(nextUpdateEvent)) {
+
+    while (!mUpdateEvents.empty()) {
+        nextUpdateEvent = mUpdateEvents.front();
         int64_t frameNum = std::get<0>(nextUpdateEvent);
         int track_idx = std::get<1>(nextUpdateEvent);
         int beat_idx = quantizeFrameNum(frameNum);
         mBeatMap[track_idx][beat_idx] = 1;
-        mUpdateEvents.pop(nextUpdateEvent);
+        mUpdateEvents.pop();
         LOGD("[processUpdateEvent] event(%ld,%d)-> beat_idx: %d", frameNum, track_idx, beat_idx);
     }
 }
@@ -234,20 +237,23 @@ DataCallbackResult DrumMachine::onAudioReady(AudioStream *oboeStream, void *audi
         // play sample sounds
         int64_t tmpFrame = mCurrentFrame;
         // DEBUG
-        if (tmpFrame % kSampleRateHz == 0){
-            mPlayerEvents.peek(tmpClapEvent);
+        if (tmpFrame % kSampleRateHz == 0) {
+            tmpClapEvent = mPlayerEvents.front();
             int64_t nextFrame = std::get<0>(tmpClapEvent);
             int nextTrack = std::get<1>(tmpClapEvent);
             LOGD("ON_BEAT %ld, nextClapEvent(%d, %ld)", tmpFrame, nextTrack, nextFrame);
         }
 
-        while (mPlayerEvents.peek(nextClapEvent) && mCurrentFrame == std::get<0>(nextClapEvent)) {
+
+        while (!mPlayerEvents.empty() && mCurrentFrame == std::get<0>(mPlayerEvents.front())) {
+            nextClapEvent = mPlayerEvents.front();
             int track_idx = std::get<1>(nextClapEvent);
-            if ((track_idx != kMetronomeTrackIdx) || (track_idx == kMetronomeTrackIdx && mMetronomeOn)){
+
+            if ((track_idx != kMetronomeTrackIdx) || (track_idx == kMetronomeTrackIdx && mMetronomeOn)) {
                 // DEBUG
                 LOGD("onAudioReady - Play ch%d at %ld", track_idx, tmpFrame);
                 mPlayerList[std::get<1>(nextClapEvent)]->setPlaying(true);
-                mPlayerEvents.pop(nextClapEvent);
+                mPlayerEvents.pop();
             }
         }
 
