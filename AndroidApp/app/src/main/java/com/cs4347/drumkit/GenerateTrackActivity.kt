@@ -140,10 +140,6 @@ class GenerateTrackActivity : Activity() {
                 } else {
                     val beatIdx = native_insertBeat(channelIdx)
                     setSelectedInstrumentBeat(beatIdx, true)
-                    Toast.makeText(this@GenerateTrackActivity,
-                            "Beat added!",
-                            Toast.LENGTH_SHORT).show()
-
                 }
 
 
