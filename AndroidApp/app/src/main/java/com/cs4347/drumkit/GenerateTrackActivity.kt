@@ -2,7 +2,6 @@ package com.cs4347.drumkit
 
 import android.app.Activity
 import android.os.Bundle
-import android.support.v4.view.ViewCompat
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.widget.SeekBar
@@ -27,7 +26,6 @@ import kotlin.math.roundToInt
 import android.view.animation.DecelerateInterpolator
 import android.animation.ObjectAnimator
 import android.animation.Animator
-import android.R.attr.animation
 import android.content.res.AssetManager
 import android.view.View
 
@@ -80,7 +78,7 @@ class GenerateTrackActivity : Activity() {
             override fun onRowSelected(row: Int) {
                 selectedInstrumentRow = row
                 Toast.makeText(this@GenerateTrackActivity,
-                        "Row $selectedInstrumentRow selected",
+                        "${instruments[row].first} selected",
                         Toast.LENGTH_SHORT).show()
             }
         })
@@ -134,13 +132,13 @@ class GenerateTrackActivity : Activity() {
         debug_add_beat.apply {
             visibility = View.VISIBLE
             setOnClickListener {
-                var channelIdx = selectedInstrumentRow;
+                val channelIdx = selectedInstrumentRow
                 if (channelIdx == null) {
                     Toast.makeText(this@GenerateTrackActivity,
                             "Select a track first!",
                             Toast.LENGTH_SHORT).show()
                 } else {
-                    var beatIdx = native_insertBeat(channelIdx)
+                    val beatIdx = native_insertBeat(channelIdx)
                     setSelectedInstrumentBeat(beatIdx, true)
                     Toast.makeText(this@GenerateTrackActivity,
                             "Beat added!",
@@ -169,7 +167,10 @@ class GenerateTrackActivity : Activity() {
             drumkit_instruments.instrumentsRecycler.getChildAt(0).performClick()
         }
         setButtons(true)
-        snapAndStartSeekBar()
+        snapSeekBar { destinationBeat ->
+            native_onStart(tempo, destinationBeat)
+            startSeekBarMovement()
+        }
     }
 
     private fun pause() {
@@ -221,7 +222,6 @@ class GenerateTrackActivity : Activity() {
         val timePerBeatMs = 60*1000/tempo.toFloat()
         val totalDuration: Float = timePerBeatMs * DrumKitInstrumentsAdapter.COLUMNS
         val timePerPercentage: Float = totalDuration / drumkit_instruments.seekBar.max
-        val percentagePerTime: Float = 1/timePerPercentage
 
         val currentTime = drumkit_instruments.seekBar.progress * timePerPercentage
         val timeFromLeftBeat = currentTime % timePerBeatMs
@@ -238,8 +238,10 @@ class GenerateTrackActivity : Activity() {
         return destinationBeat.toInt()
     }
 
-    private fun snapAndStartSeekBar() {
-        // snap seekbar to nearest beat
+    /**
+     * Snaps seekbar to nearest beat
+     */
+    private fun snapSeekBar(doAfterSnap: (destinationBeat: Int)->Unit) {
         val timePerBeatMs = 60*1000/tempo.toFloat()
         val totalDuration: Float = timePerBeatMs * DrumKitInstrumentsAdapter.COLUMNS
         val timePerPercentage: Float = totalDuration / drumkit_instruments.seekBar.max
@@ -247,12 +249,10 @@ class GenerateTrackActivity : Activity() {
         val destinationBeat = calcDestinationBeat()
         val destProgress = (destinationBeat * timePerBeatMs * percentagePerTime).roundToInt()
 
-        // start seekbar movement after animation
         disposables.add(drumkit_instruments.seekBar.shiftTo(destProgress, seekBarSnapDuration)
                 .subscribeOn(AndroidSchedulers.mainThread())
                 .subscribe {
-                    native_onStart(tempo, calcDestinationBeat())
-                    startSeekBarMovement()
+                    doAfterSnap(destinationBeat)
                 })
     }
 
