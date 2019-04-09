@@ -55,6 +55,7 @@ public:
 private:
     void preparePlayerEvents();
     void processUpdateEvents();
+    int getBeatIdx(int64_t frameNum);
     int quantizeFrameNum(int64_t frameNum);
     int64_t quantizeBeatIdx(int beat_idx);
     void printBeatMap();

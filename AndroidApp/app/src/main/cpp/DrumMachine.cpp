@@ -178,6 +178,13 @@ void DrumMachine::resetAll() {
 }
 
 /**
+ * Quantizes frame number & rounds beat to the right value if required
+ */
+int DrumMachine::getBeatIdx(int64_t frameNum) {
+    return quantizeFrameNum(frameNum) % kTotalBeat;
+}
+
+/**
  * Add a beat to a given track, at the current playback position
  *
  * The function comprises of two steps:
@@ -194,7 +201,7 @@ int DrumMachine::insertBeat(int trackIdx) {
     // update beat map at the end of the loop
     int64_t currentFrame = mCurrentFrame;
     mUpdateEvents.push(std::make_tuple(currentFrame, trackIdx));
-    return quantizeFrameNum(currentFrame);
+    return getBeatIdx(currentFrame);
 }
 
 /**
@@ -210,7 +217,7 @@ void DrumMachine::processUpdateEvents() {
         nextUpdateEvent = mUpdateEvents.front();
         int64_t frameNum = std::get<0>(nextUpdateEvent);
         int trackIdx = std::get<1>(nextUpdateEvent);
-        int beatIdx = quantizeFrameNum(frameNum);
+        int beatIdx = getBeatIdx(frameNum);
         mBeatMap[trackIdx][beatIdx] = 1;
         mUpdateEvents.pop();
         LOGD("[processUpdateEvent] event(%lld,%d)-> beat_idx: %d", frameNum, trackIdx, beatIdx);
