@@ -152,7 +152,7 @@ void DrumMachine::setBeat(int beatIdx){
     mBeatStartIndex = beatIdx;
     int64_t frameNum = quantizeBeatIdx(beatIdx);
     mCurrentFrame = frameNum;
-    LOGD("setBeat: beat %d => mCurrentFrame %lld", beatIdx, frameNum);
+    LOGD("setBeat: beat %d => mCurrentFrame %ld", beatIdx, frameNum);
 }
 
 /**
@@ -213,7 +213,7 @@ void DrumMachine::processUpdateEvents() {
         int beatIdx = quantizeFrameNum(frameNum);
         mBeatMap[trackIdx][beatIdx] = 1;
         mUpdateEvents.pop();
-        LOGD("[processUpdateEvent] event(%lld,%d)-> beat_idx: %d", frameNum, trackIdx, beatIdx);
+        LOGD("[processUpdateEvent] event(%ld,%d)-> beat_idx: %d", frameNum, trackIdx, beatIdx);
     }
 }
 
