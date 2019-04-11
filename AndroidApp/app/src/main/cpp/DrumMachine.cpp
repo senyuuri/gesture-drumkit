@@ -178,6 +178,21 @@ void DrumMachine::resetAll() {
 }
 
 /**
+ * Quantizes frame number & rounds beat to the right value if required
+ *
+ * Quantization: after conversion, the beat index is rounded to the nearest integer [0, kTotalBeat)
+ *
+ * @param frameNum - index of frame
+ * @return index of beat
+ */
+int DrumMachine::getBeatIdx(int64_t frameNum) {
+    /* Return the beat idx of a given frameNum, after quantization*/
+    float framePerBeat = round((60.0f / mTempo) * kSampleRateHz);
+    int beatIdx = static_cast<int>(round((float)frameNum / framePerBeat));
+    return beatIdx % kTotalBeat;
+}
+
+/**
  * Add a beat to a given track, at the current playback position
  *
  * The function comprises of two steps:
@@ -194,7 +209,7 @@ int DrumMachine::insertBeat(int trackIdx) {
     // update beat map at the end of the loop
     int64_t currentFrame = mCurrentFrame;
     mUpdateEvents.push(std::make_tuple(currentFrame, trackIdx));
-    return quantizeFrameNum(currentFrame);
+    return getBeatIdx(currentFrame);
 }
 
 /**
@@ -210,26 +225,11 @@ void DrumMachine::processUpdateEvents() {
         nextUpdateEvent = mUpdateEvents.front();
         int64_t frameNum = std::get<0>(nextUpdateEvent);
         int trackIdx = std::get<1>(nextUpdateEvent);
-        int beatIdx = quantizeFrameNum(frameNum);
+        int beatIdx = getBeatIdx(frameNum);
         mBeatMap[trackIdx][beatIdx] = 1;
         mUpdateEvents.pop();
         LOGD("[processUpdateEvent] event(%ld,%d)-> beat_idx: %d", frameNum, trackIdx, beatIdx);
     }
-}
-
-/**
- * Convert the index of frame to the index of beat with quantization
- *
- * Quantization: after conversion, the beat index is rounded to the nearest integer
- *
- * @param frameNum - index of frame
- * @return index of beat
- */
-int DrumMachine::quantizeFrameNum(int64_t frameNum) {
-    /* Return the beat idx of a given frameNum, after quantization*/
-    float framePerBeat = round((60.0f / mTempo) * kSampleRateHz);
-    int beatIdx = static_cast<int>(round((float)frameNum / framePerBeat));
-    return beatIdx;
 }
 
 /**
