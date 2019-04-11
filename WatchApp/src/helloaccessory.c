@@ -501,9 +501,9 @@ static void _initialize_sensors(void)
 	int ret;
 	for (int i = 0; i < SENSOR_COUNT; i++) {
 		sensor_type_e st = sensors_used[i];
-		_print_sensor_info(&s_info.sensors[i].handle);
 
 		ret = sensor_get_default_sensor(st, &s_info.sensors[i].handle);
+		//_print_sensor_info(&s_info.sensors[i].handle);
 		if (ret != SENSOR_ERROR_NONE) {
 			dlog_print(DLOG_ERROR, TAG, "[%s:%d] sensor_get_default_sensor() error: %s", __FILE__, __LINE__, get_error_message(ret));
 			continue;
