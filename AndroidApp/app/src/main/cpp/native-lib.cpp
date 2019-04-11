@@ -48,16 +48,8 @@ Java_com_cs4347_drumkit_RecordingActivity_native_1onStart(JNIEnv *env, jobject i
 }
 
 JNIEXPORT void JNICALL
-Java_com_cs4347_drumkit_RecordingActivity_native_1onStartMetronome(JNIEnv *env, jobject instance,
-        jobject jAssetManager, jint tempo) {
+Java_com_cs4347_drumkit_RecordingActivity_native_1onStartMetronome(JNIEnv *env, jobject instance, jint tempo) {
 
-    AAssetManager *assetManager = AAssetManager_fromJava(env, jAssetManager);
-    if (assetManager == nullptr) {
-    LOGE("Could not obtain the AAssetManager");
-    return;
-    }
-
-    dmachine = std::make_unique<DrumMachine>(*assetManager);
     dmachine->startMetronome(tempo);
 }
 
