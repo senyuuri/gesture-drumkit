@@ -152,7 +152,7 @@ void DrumMachine::setBeat(int beatIdx){
     mBeatStartIndex = beatIdx;
     int64_t frameNum = quantizeBeatIdx(beatIdx);
     mCurrentFrame = frameNum;
-    LOGD("setBeat: beat %d => mCurrentFrame %lld", beatIdx, frameNum);
+    LOGD("setBeat: beat %d => mCurrentFrame %ld", beatIdx, frameNum);
 }
 
 /**
@@ -179,9 +179,17 @@ void DrumMachine::resetAll() {
 
 /**
  * Quantizes frame number & rounds beat to the right value if required
+ *
+ * Quantization: after conversion, the beat index is rounded to the nearest integer [0, kTotalBeat)
+ *
+ * @param frameNum - index of frame
+ * @return index of beat
  */
 int DrumMachine::getBeatIdx(int64_t frameNum) {
-    return quantizeFrameNum(frameNum) % kTotalBeat;
+    /* Return the beat idx of a given frameNum, after quantization*/
+    float framePerBeat = round((60.0f / mTempo) * kSampleRateHz);
+    int beatIdx = static_cast<int>(round((float)frameNum / framePerBeat));
+    return beatIdx % kTotalBeat;
 }
 
 /**
@@ -220,23 +228,8 @@ void DrumMachine::processUpdateEvents() {
         int beatIdx = getBeatIdx(frameNum);
         mBeatMap[trackIdx][beatIdx] = 1;
         mUpdateEvents.pop();
-        LOGD("[processUpdateEvent] event(%lld,%d)-> beat_idx: %d", frameNum, trackIdx, beatIdx);
+        LOGD("[processUpdateEvent] event(%ld,%d)-> beat_idx: %d", frameNum, trackIdx, beatIdx);
     }
-}
-
-/**
- * Convert the index of frame to the index of beat with quantization
- *
- * Quantization: after conversion, the beat index is rounded to the nearest integer
- *
- * @param frameNum - index of frame
- * @return index of beat
- */
-int DrumMachine::quantizeFrameNum(int64_t frameNum) {
-    /* Return the beat idx of a given frameNum, after quantization*/
-    float framePerBeat = round((60.0f / mTempo) * kSampleRateHz);
-    int beatIdx = static_cast<int>(round((float)frameNum / framePerBeat));
-    return beatIdx;
 }
 
 /**
