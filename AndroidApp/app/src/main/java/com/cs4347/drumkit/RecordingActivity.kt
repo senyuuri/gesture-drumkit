@@ -109,6 +109,8 @@ class RecordingActivity: Activity() {
            tempo = tempo_edittext.text.toString().toInt()
         }
 
+        // initialise drum machine
+        native_onInit(assets);
     }
 
     override fun onStop() {
