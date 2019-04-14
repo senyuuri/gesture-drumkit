@@ -12,6 +12,7 @@ import io.reactivex.subjects.PublishSubject
 import java.lang.Math.abs
 import java.sql.Time
 import java.util.*
+import java.util.concurrent.Semaphore
 
 enum class GestureType {DOWN, UP, LEFT, RIGHT, FRONT, BACK}
 data class Gesture(val type: GestureType, val time: Long)
@@ -19,7 +20,7 @@ data class Gesture(val type: GestureType, val time: Long)
 class GestureRecognizer {
 
     companion object {
-        const val WINDOW_SIZE = 10
+        const val WINDOW_SIZE = 50 // number of groups of 5ms data
         private const val NUM_SENSORS = 2
         private const val HISTORY_SIZE = 200
         private val DATA_ITEMS_PER_MSG = 3
@@ -147,8 +148,9 @@ class GestureRecognizer {
 
     // TODO: remove after debugging
     private var predictCountDebug = 0
-    // 2 * 1000ms / 5ms, a gesture every 2s
-    private val fakeGestureAfterNCounts = 2 * 1000 / 5
+    // 2 * 1000ms / MESSAGE_PERIOD, a gesture every 2s
+    private val fakeGestureAfterNCounts = 2 * 1000 / MESSAGE_PERIOD
+    private val mockGestureMutex = Semaphore(1, true)
 
     private fun predict(data: FloatArray): Gesture? {
         // ensure data queue uses the same data type as what is required here
@@ -156,13 +158,16 @@ class GestureRecognizer {
         // ignore subsequent requests to predict if a gesture is detected
         // TODO: supposed to predict gesture with data, $data"
         if (returnFakeGestureAfter2SecsOfData) {
+            mockGestureMutex.acquire()
             predictCountDebug += 1
 
             if (fakeGestureAfterNCounts == predictCountDebug) {
                 Log.d(TAG, "Predicting a fake gesture")
                 predictCountDebug = 0
+                mockGestureMutex.release()
                 return Gesture(GestureType.DOWN, System.currentTimeMillis());
             } else {
+                mockGestureMutex.release()
                 return null
             }
         }
