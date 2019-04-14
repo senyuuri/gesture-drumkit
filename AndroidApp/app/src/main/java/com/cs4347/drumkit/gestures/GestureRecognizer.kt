@@ -91,6 +91,9 @@ class GestureRecognizer {
     private fun processSensorData(message: SensorMessage): Pair<Boolean, FloatArray?> {
         // TODO: track accel history later on, to do acceleration tricks
 
+        // TODO preprocess data, read json in ../models for the values
+        // normalized_data = 2*(row - col_min)/(col_max - col_min) -1
+
         val justStartedLoadingAcceleration =
                 accelerationWindow.size == 0
                 && gyroscopeWindow.size > 0
