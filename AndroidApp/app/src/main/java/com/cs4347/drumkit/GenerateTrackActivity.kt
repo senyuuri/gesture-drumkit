@@ -19,18 +19,17 @@ import io.reactivex.subjects.CompletableSubject
 import kotlinx.android.synthetic.main.activity_generate_track.*
 import kotlinx.android.synthetic.main.view_instrument_row.view.*
 import java.util.concurrent.TimeUnit
-import kotlin.math.floor
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.roundToInt
 import android.view.animation.DecelerateInterpolator
 import android.animation.ObjectAnimator
 import android.animation.Animator
 import android.content.res.AssetManager
 import android.view.View
 import android.os.Build
-
-
+import com.cs4347.drumkit.gestures.GestureRecognizer
+import io.reactivex.Single
+import java.lang.AssertionError
+import java.util.concurrent.Semaphore
+import kotlin.math.*
 
 
 class GenerateTrackActivity : Activity() {
@@ -44,7 +43,6 @@ class GenerateTrackActivity : Activity() {
     {
         System.loadLibrary("native-lib")
     }
-
 
     companion object {
         private val tempoRange = Pair(60, 120)
@@ -63,15 +61,16 @@ class GenerateTrackActivity : Activity() {
             "Scratch" to R.color.colorScratch,
             "Rim" to R.color.colorRim
     )
+    private val disposables: CompositeDisposable = CompositeDisposable()
+    private val gestureRecognizer = GestureRecognizer()
+    private val mutex = Semaphore(1, true)
 
     private lateinit var instrumentsAdapter: DrumKitInstrumentsAdapter
-    private val disposables: CompositeDisposable = CompositeDisposable()
-
-    private var seekBarMovementDisposable: Disposable? = null
-
-
     private var tempo = tempoRange.first
     private var selectedInstrumentRow: Int? = null
+
+    private var seekBarMovementDisposable: Disposable? = null
+    private var sensorDataDisposable: Disposable? = null
 
     private fun hideNavBar() {
         val currentApiVersion = android.os.Build.VERSION.SDK_INT
@@ -145,18 +144,66 @@ class GenerateTrackActivity : Activity() {
         }
 
         play.setOnClickListener {
-            // TODO disable beat input from gestures in play mode
             debug_add_beat.isEnabled = false
             play()
         }
 
         record.setOnClickListener {
-            // TODO start ML recognizer here
             play()
+
+            val recentMessageThreshold = GestureRecognizer.MESSAGE_PERIOD * GestureRecognizer.WINDOW_SIZE
+            var lastGestureTime = 0L
+            gestureRecognizer.subscribeToGestures { gesture ->
+                // a single gesture by the user is be detected as
+                // multiple gestures happening around the same time
+
+                // there is no guarantee whether first gesture detected in the window is
+                // from the start, middle, or end of the window
+                // (due to ml recognition)
+                // subsequent detected gestures may also come from earlier parts of the window
+                // (due to multithreading)
+
+                // The following is an example sequence of gestures
+                // ... a3 > a2 > ...(some time)... b2 > b1 > b4 ...
+                // (a & b are single gestures from the user. each spans 4 frames)
+
+                // ignore any gesture that happens recently from the prev gesture
+                // ignore any gesture that happened in the past
+                // (assumes that gestures are detected mostly in sequential order)
+
+                // check sequential assumption
+                if (lastGestureTime - gesture.time >= recentMessageThreshold/2) {
+                    throw AssertionError("multithreading bug: gestures are not detected in sequential order at all")
+                }
+
+                // only respond to new gestures
+                if (lastGestureTime < gesture.time) {
+                    // lock timing check & assignment
+                    mutex.acquire()
+                    val gestureIsTooRecent = (gesture.time - lastGestureTime) < recentMessageThreshold
+                    if (!gestureIsTooRecent) {
+                        lastGestureTime = gesture.time
+                        mutex.release()
+
+                        // call on ui thread
+                        Single.just(Unit)
+                                .subscribeOn(AndroidSchedulers.mainThread())
+                                .subscribe { _, _ ->
+                                    // casting is safe here, a track is always selected after play()
+                                    val beatIdx = native_insertBeat(selectedInstrumentRow!!)
+                                    setSelectedInstrumentBeat(beatIdx, true)
+                                }
+                    } else {
+                        mutex.release()
+                    }
+                }
+
+            }
         }
 
         pause.setOnClickListener {
             pause()
+            gestureRecognizer.stopSubscriptionToGestures()
         }
 
         // pause when seekbar is adjusted by user
@@ -174,8 +221,8 @@ class GenerateTrackActivity : Activity() {
             clearSelectedInstrumentBeats()
         }
 
-        // TODO: delete after debugging
         debug_add_beat.apply {
+            // TODO: delete after debugging
             visibility = View.VISIBLE
             setOnClickListener {
                 val channelIdx = selectedInstrumentRow
@@ -190,6 +237,23 @@ class GenerateTrackActivity : Activity() {
 
 
             }
+        }
+        debug_mock_gesture.apply {
+            // TODO: delete after debugging
+            visibility = View.VISIBLE
+            setOnClickListener {
+                gestureRecognizer.returnFakeGestureAfter2SecsOfData =
+                        !gestureRecognizer.returnFakeGestureAfter2SecsOfData
+                val onOffText = when (gestureRecognizer.returnFakeGestureAfter2SecsOfData) {
+                    true -> "ON"
+                    false -> "OFF"
+                }
+                Toast.makeText(this@GenerateTrackActivity,
+                        "Mocks a gesture after 2s of data is received & processed, $onOffText",
+                        Toast.LENGTH_LONG).show()
+                text = "Mock Ges($onOffText)"
+            }
+
         }
 
         setTempoText()
@@ -216,11 +280,10 @@ class GenerateTrackActivity : Activity() {
     }
 
     private fun pause() {
-        // todo: stop ml if possible
         debug_add_beat.isEnabled = true
         setButtons(false)
-        stopSeekBarMovement()
-        // todo: add native_pause
+        seekBarMovementDisposable?.dispose()
+        sensorDataDisposable?.dispose()
         native_onStop()
     }
 
@@ -254,10 +317,6 @@ class GenerateTrackActivity : Activity() {
         clear.isEnabled = !playingBack
 
         pause.isEnabled = playingBack
-    }
-
-    private fun stopSeekBarMovement() {
-        seekBarMovementDisposable?.dispose()
     }
 
     private fun calcDestinationBeat(): Int {

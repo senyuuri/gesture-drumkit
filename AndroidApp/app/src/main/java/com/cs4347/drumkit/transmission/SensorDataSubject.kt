@@ -29,6 +29,7 @@ class SensorDataSubject private constructor() {
                             "Time: ${firstMsg.timestamp}, " +
                             "Data: ${firstMsg.dataList}")
 
+                    // assumes no packet is dropped (should be a safe assumption)
                     // assert that packets are received in chronological order
                     val currPacketTime = packet.getMessages(0).timestamp
                     if (prevPacketTime > currPacketTime) {

@@ -1,53 +1,77 @@
 package com.cs4347.drumkit.gestures
 
-import io.reactivex.Observable
 import Sensor.WatchPacket.SensorMessage
+import android.content.Context
+import android.util.Log
+import android.widget.Toast
+import com.cs4347.drumkit.transmission.SensorDataSubject
+import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
+import io.reactivex.subjects.PublishSubject
 import java.lang.Math.abs
 import java.sql.Time
 import java.util.*
-import kotlin.collections.ArrayList
 
 enum class GestureType {DOWN, UP, LEFT, RIGHT, FRONT, BACK}
-data class Gesture(val type: GestureType, val time: Time)
+data class Gesture(val type: GestureType, val time: Long)
 
 class GestureRecognizer {
 
     companion object {
-        private const val WINDOW_SIZE = 10
+        const val WINDOW_SIZE = 10
+        private const val NUM_SENSORS = 2
         private const val HISTORY_SIZE = 200
+        private val DATA_ITEMS_PER_MSG = 3
+        private val MODEL_INPUT_SIZE = NUM_SENSORS * WINDOW_SIZE * DATA_ITEMS_PER_MSG
+        private const val TAG = "GestureRecognizer"
 
         // 5ms between each message item
-        private const val MESSAGE_PERIOD = 5
+        const val MESSAGE_PERIOD = 5
     }
 
     private val accelerationWindow: LinkedList<SensorMessage> = LinkedList()
     private val gyroscopeWindow: LinkedList<SensorMessage> = LinkedList()
-    private val dataQueue: LinkedList<ArrayList<Float>> = LinkedList()
     private val accelerationHistory: LinkedList<SensorMessage> = LinkedList()
-
-    private var disposable: Disposable? = null
+    private val compositeDisposable = CompositeDisposable()
+    var returnFakeGestureAfter2SecsOfData = false
 
     /**
-     * Assumes that messages from observable always come in chronological order
+     * Subscribe to gestures & respond on listener
+     * Listener is executed by the computation scheduler (multithreaded)
      */
-    fun subscribe(observable: Observable<SensorMessage>, listener: GestureListener) {
-        disposable = observable.subscribeOn(Schedulers.io())
-                .doOnNext { loadData(it) }
-                .observeOn(Schedulers.computation())
-                .subscribe {
-                    if (dataQueue.size > 0) {
-                        predict(dataQueue.poll())?.let {
-                            listener.gestureDetected(it)
-                        }
-                    }
+    fun subscribeToGestures(listener: (Gesture) -> Unit) {
+        // all data wrangling is done on one thread to prevent race conditions
+        // prediction is done on multiple threads (num threads = num cores)
+        SensorDataSubject.instance.observe()
+                .subscribeOn(Schedulers.single())
+                .map { sensorMsg: SensorMessage ->
+                    // rxjava2 doesn't let us pass nulls
+                    // wrap it in a pair instead
+                    processSensorData(sensorMsg)
                 }
-
+                .doOnError {
+                    Log.e(TAG, "ERROR with gesture recog subscription!!!! \n $it")
+                    //Toast.makeText(context,
+                    //        "Data stream has died!", Toast.LENGTH_SHORT).show()
+                }
+                .filter { potentialModelInput ->
+                    // discard empty inputs
+                    potentialModelInput.first
+                }
+                .observeOn(Schedulers.computation())
+                .subscribe { modelInput: Pair<Boolean, FloatArray?> ->
+                    // cast is safe, empty inputs are already filtered out
+                    predict(modelInput.second!!)
+                            ?.let { gesture -> listener(gesture) }
+                }
+                .apply {
+                    compositeDisposable.add(this)
+                }
     }
 
-    fun dispose() {
-        disposable?.dispose()
+    fun stopSubscriptionToGestures() {
+        compositeDisposable.dispose()
     }
 
     /**
@@ -59,7 +83,11 @@ class GestureRecognizer {
         }
     }
 
-    private fun loadData(message: SensorMessage) {
+    /**
+     * Processes raw sensor messages
+     * @return data processed for model input, returned only when enough raw messages are processed
+     */
+    private fun processSensorData(message: SensorMessage): Pair<Boolean, FloatArray?> {
         // TODO: track accel history later on, to do acceleration tricks
 
         val justStartedLoadingAcceleration =
@@ -87,32 +115,59 @@ class GestureRecognizer {
             syncWindows(gyroscopeWindow, accelerationWindow)
         }
 
-        // add data item
-        val shouldAddQueueItem = !(accelerationWindow.size < WINDOW_SIZE
+        // convert sensor data into model input data & queue it for processing
+        val hasSufficientData = !(accelerationWindow.size < WINDOW_SIZE
                 || gyroscopeWindow.size < WINDOW_SIZE)
 
-        if (shouldAddQueueItem) {
-            val data = ArrayList<Float>()
-            for (i in 0.. WINDOW_SIZE) {
-                // what order should the data be in?
-                // use iterators for this
-                TODO("load data into data queue")
+        if (hasSufficientData) {
+            val processedData = FloatArray(MODEL_INPUT_SIZE)
+            val gyIterator = gyroscopeWindow.iterator()
+            val accelIterator = accelerationWindow.iterator()
+
+            // TODO: verify that model takes data in this order
+            var inputIdx = 0
+            for (i in 0 until WINDOW_SIZE) {
+                for (gyData in gyIterator.next().dataList) {
+                    processedData[inputIdx] = gyData
+                    inputIdx += 1
+                }
+                for (accelData in accelIterator.next().dataList) {
+                    processedData[inputIdx] = accelData
+                    inputIdx += 1
+                }
             }
-            dataQueue.add(data)
             accelerationWindow.removeFirst()
             gyroscopeWindow.removeFirst()
+            return Pair(true, processedData)
+
+        } else {
+            return Pair(false, null)
         }
     }
 
+    // TODO: remove after debugging
+    private var predictCountDebug = 0
+    // 2 * 1000ms / 5ms, a gesture every 2s
+    private val fakeGestureAfterNCounts = 2 * 1000 / 5
 
-    private fun predict(data: ArrayList<Float>): Gesture? {
+    private fun predict(data: FloatArray): Gesture? {
         // ensure data queue uses the same data type as what is required here
         // so we don't waste time copying data
-        TODO("recognition / inference code here")
+        // ignore subsequent requests to predict if a gesture is detected
+        // TODO: supposed to predict gesture with data, $data"
+        if (returnFakeGestureAfter2SecsOfData) {
+            predictCountDebug += 1
+
+            if (fakeGestureAfterNCounts == predictCountDebug) {
+                Log.d(TAG, "Predicting a fake gesture")
+                predictCountDebug = 0
+                return Gesture(GestureType.DOWN, System.currentTimeMillis());
+            } else {
+                return null
+            }
+        }
+        return null
     }
 
 }
 
-interface GestureListener {
-    fun gestureDetected(gesture: Gesture)
-}

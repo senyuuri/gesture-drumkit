@@ -100,7 +100,6 @@ class RecordingActivity: Activity() {
         }
 
         audio_insert_beat_button.setOnClickListener {
-            // TODO set channel idx by selecting a channel strip on the UI
             native_insertBeat(0);
         }
 
