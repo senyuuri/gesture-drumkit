@@ -13,22 +13,44 @@ import java.lang.Math.abs
 import java.sql.Time
 import java.util.*
 import java.util.concurrent.Semaphore
+import java.nio.channels.FileChannel.MapMode.READ_ONLY
+import android.content.res.AssetFileDescriptor
+import android.app.Activity
+import org.tensorflow.lite.Interpreter
+import java.io.FileInputStream
+import java.io.IOException
+import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
+
 
 enum class GestureType {DOWN, UP, LEFT, RIGHT, FRONT, BACK}
 data class Gesture(val type: GestureType, val time: Long)
 
-class GestureRecognizer {
+class GestureRecognizer(activity: Activity) {
 
     companion object {
         const val WINDOW_SIZE = 50 // number of groups of 5ms data
         private const val NUM_SENSORS = 2
         private const val HISTORY_SIZE = 200
-        private val DATA_ITEMS_PER_MSG = 3
+        private val DATA_ITEMS_PER_MSG = 3+1 // 3 axes, 1 type (accelerometer, gyroscope)
         private val MODEL_INPUT_SIZE = NUM_SENSORS * WINDOW_SIZE * DATA_ITEMS_PER_MSG
         private const val TAG = "GestureRecognizer"
+        private const val MODEL_LOCATION = "converted_model.tflite"
 
         // 5ms between each message item
         const val MESSAGE_PERIOD = 5
+    }
+
+    protected val tflite: Interpreter = Interpreter(loadModelFile(activity))
+
+    @Throws(IOException::class)
+    private fun loadModelFile(activity: Activity): MappedByteBuffer {
+        val fileDescriptor = activity.assets.openFd(MODEL_LOCATION)
+        val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
+        val fileChannel = inputStream.channel
+        val startOffset = fileDescriptor.startOffset
+        val declaredLength = fileDescriptor.declaredLength
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
     }
 
     private val accelerationWindow: LinkedList<SensorMessage> = LinkedList()
@@ -160,6 +182,9 @@ class GestureRecognizer {
         // so we don't waste time copying data
         // ignore subsequent requests to predict if a gesture is detected
         // TODO: supposed to predict gesture with data, $data"
+
+        // tflite.run(data, arrayOf("up", "down"))
+
         if (returnFakeGestureAfter2SecsOfData) {
             mockGestureMutex.acquire()
             predictCountDebug += 1
