@@ -52,7 +52,6 @@
         <meta-data
             android:name="AccessoryServicesLocation"
             android:value="/res/xml/accessoryservices.xml"/>
-
     </application>
 
 </manifest>
