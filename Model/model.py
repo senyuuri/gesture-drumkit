@@ -108,9 +108,9 @@ def train_model(vals, labels, test_size=0.2, do_eval=True):
 
     # build the model
     model = Sequential()
-    model.add(Dense(128, activation='relu', input_shape=input_shape))
+    model.add(Dense(131, activation='relu', input_shape=input_shape))
     model.add(BatchNormalization())
-    model.add(Dense(128, activation='relu'))
+    model.add(Dense(131, activation='relu'))
     model.add(Dense(len(GESTURES_DIRS), activation='softmax'))
     model.summary()
 
