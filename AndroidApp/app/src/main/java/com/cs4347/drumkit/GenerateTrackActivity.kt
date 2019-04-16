@@ -62,7 +62,7 @@ class GenerateTrackActivity : Activity() {
             "Rim" to R.color.colorRim
     )
     private val disposables: CompositeDisposable = CompositeDisposable()
-    private val gestureRecognizer = GestureRecognizer()
+    private val gestureRecognizer = GestureRecognizer(this)
     private val mutex = Semaphore(1, true)
 
     private lateinit var instrumentsAdapter: DrumKitInstrumentsAdapter
