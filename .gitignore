@@ -2,3 +2,4 @@
 .DS_Store
 .ipynb_checkpoints
 Model/.ipynb_checkpoints
+Model/sliced_data/*
