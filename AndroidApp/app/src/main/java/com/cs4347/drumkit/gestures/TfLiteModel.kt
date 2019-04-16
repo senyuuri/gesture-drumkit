@@ -47,8 +47,8 @@ class TfLiteModel(activity: Activity): Model {
                 else -> message.getData(i-1)
             }
             resultArray[i] = normalizationTransform(input,
-                    normalizationData["col_min"]!![i-1],
-                    normalizationData["col_max"]!![i-1])
+                    normalizationData["col_min"]!![i],
+                    normalizationData["col_max"]!![i])
         }
 
         return resultArray

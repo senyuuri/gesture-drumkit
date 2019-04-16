@@ -25,10 +25,10 @@ import android.animation.Animator
 import android.content.res.AssetManager
 import android.view.View
 import android.os.Build
+import android.util.Log
 import com.cs4347.drumkit.gestures.GestureRecognizer
+import com.cs4347.drumkit.gestures.GestureType
 import io.reactivex.Single
-import java.lang.AssertionError
-import java.util.concurrent.Semaphore
 import kotlin.math.*
 
 
@@ -38,6 +38,7 @@ class GenerateTrackActivity : Activity() {
     private external fun native_onStop()
     private external fun native_insertBeat(channel_idx: Int): Int
     private external fun native_setTempo(tempo: Int)
+    private external fun native_resetTrack(track_idx: Int)
 
     init
     {
@@ -62,7 +63,7 @@ class GenerateTrackActivity : Activity() {
             "Rim" to R.color.colorRim
     )
     private val disposables: CompositeDisposable = CompositeDisposable()
-    private val gestureRecognizer = GestureRecognizer(this)
+    private var gestureRecognizer: GestureRecognizer? = null
 
     private lateinit var instrumentsAdapter: DrumKitInstrumentsAdapter
     private var tempo = tempoRange.first
@@ -118,6 +119,8 @@ class GenerateTrackActivity : Activity() {
         hideNavBar()
         setContentView(R.layout.activity_generate_track)
 
+        gestureRecognizer = GestureRecognizer(this)
+
         instrumentsAdapter = DrumKitInstrumentsAdapter(instruments, object: RowSelectionListener {
             override fun onRowSelected(row: Int) {
                 selectedInstrumentRow = row
@@ -150,28 +153,31 @@ class GenerateTrackActivity : Activity() {
         record.setOnClickListener {
             play()
 
-            val recentMessageThreshold = GestureRecognizer.MESSAGE_PERIOD * GestureRecognizer.WINDOW_SIZE
-            var lastGestureTime = 0L
-            gestureRecognizer.subscribeToGestures { gesture ->
+            gestureRecognizer!!.subscribeToGestures { gesture ->
                 // a single gesture by the user is be detected as
                 // multiple gestures happening around the same time
 
                 // there is no guarantee whether first gesture detected in the window is
                 // from the start, middle, or end of the window
                 // (due to ml recognition)
-                Single.just(Unit)
-                        .subscribeOn(AndroidSchedulers.mainThread())
-                        .subscribe { _, _ ->
-                            // casting is safe here, a track is always selected after play()
-                            val beatIdx = native_insertBeat(selectedInstrumentRow!!)
-                            setSelectedInstrumentBeat(beatIdx, true)
-                        }
+
+                // only care about down gesture
+                if (gesture.type == GestureType.DOWN) {
+                    Log.i("Gesture Debug", "Down gesture detected at: ${gesture.time}")
+                    Single.just(Unit)
+                            .subscribeOn(AndroidSchedulers.mainThread())
+                            .subscribe { _, _ ->
+                                // casting is safe here, a track is always selected after play()
+                                val beatIdx = native_insertBeat(selectedInstrumentRow!!)
+                                setSelectedInstrumentBeat(beatIdx, true)
+                            }
+                }
             }
         }
 
         pause.setOnClickListener {
             pause()
-            gestureRecognizer.stopSubscriptionToGestures()
+            gestureRecognizer!!.stopSubscriptionToGestures()
         }
 
         // pause when seekbar is adjusted by user
@@ -186,7 +192,8 @@ class GenerateTrackActivity : Activity() {
         })
 
         clear.setOnClickListener {
-            clearSelectedInstrumentBeats()
+            uiClearSelectedInstrumentBeats()
+            native_resetTrack(selectedInstrumentRow!!)
         }
 
         debug_add_beat.apply {
@@ -210,9 +217,9 @@ class GenerateTrackActivity : Activity() {
             // TODO: delete after debugging
             visibility = View.VISIBLE
             setOnClickListener {
-                gestureRecognizer.returnFakeGestureAfter2SecsOfData =
-                        !gestureRecognizer.returnFakeGestureAfter2SecsOfData
-                val onOffText = when (gestureRecognizer.returnFakeGestureAfter2SecsOfData) {
+                gestureRecognizer!!.returnFakeGestureAfter2SecsOfData =
+                        !gestureRecognizer!!.returnFakeGestureAfter2SecsOfData
+                val onOffText = when (gestureRecognizer!!.returnFakeGestureAfter2SecsOfData) {
                     true -> "ON"
                     false -> "OFF"
                 }
@@ -269,7 +276,7 @@ class GenerateTrackActivity : Activity() {
         }
     }
 
-    private fun clearSelectedInstrumentBeats() {
+    private fun uiClearSelectedInstrumentBeats() {
         selectedInstrumentRow?.let {
             val beatRowRecycler: RecyclerView = drumkit_instruments.instrumentsRecycler.getChildAt(it).instrument_beats_rv
             val beatRowAdapter = beatRowRecycler.adapter as BeatsAdapter

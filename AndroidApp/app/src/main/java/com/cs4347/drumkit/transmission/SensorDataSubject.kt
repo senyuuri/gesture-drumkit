@@ -25,9 +25,9 @@ class SensorDataSubject private constructor() {
                 override fun onReceive(packet: Sensor.WatchPacket) {
                     // TODO: for debugging, delete before submission
                     val firstMsg = packet.getMessages(0)
-                    Log.d(TAG, "Packet's First Msg: ${firstMsg.sensorType}, " +
-                            "Time: ${firstMsg.timestamp}, " +
-                            "Data: ${firstMsg.dataList}")
+                    // Log.d(TAG, "Packet's First Msg: ${firstMsg.sensorType}, " +
+                    //         "Time: ${firstMsg.timestamp}, " +
+                    //         "Data: ${firstMsg.dataList}")
 
                     // assumes no packet is dropped (should be a safe assumption)
                     // assert that packets are received in chronological order

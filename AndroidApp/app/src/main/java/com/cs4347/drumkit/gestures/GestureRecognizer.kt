@@ -32,6 +32,7 @@ class GestureRecognizer(activity: Activity) {
         private const val NUM_SENSORS = 2
         private const val HISTORY_SIZE = 200
         private const val TAG = "GestureRecognizer"
+        private const val RECOGNITION_COOLDOWN = 500 // ms
         const val WINDOW_SIZE = 50 // number of groups of 5ms data
         const val DATA_ITEMS_PER_MSG = 4 // 3 axes + 1 type (accelerometer, gyroscope)
         const val MODEL_INPUT_SIZE = NUM_SENSORS * WINDOW_SIZE * DATA_ITEMS_PER_MSG
@@ -43,8 +44,7 @@ class GestureRecognizer(activity: Activity) {
     private val accelerationWindow: LinkedList<SensorMessage> = LinkedList()
     private val gyroscopeWindow: LinkedList<SensorMessage> = LinkedList()
     private val compositeDisposable = CompositeDisposable()
-    private val model = TfLiteModel(activity)
-    private var skipGestureCount = 0
+    private var model: Model = TfLiteModel(activity)
     private val accelerationHistory: LinkedList<SensorMessage> = LinkedList()
 
     var returnFakeGestureAfter2SecsOfData = false
@@ -55,6 +55,9 @@ class GestureRecognizer(activity: Activity) {
      */
     fun subscribeToGestures(listener: (Gesture) -> Unit) {
         // all data wrangling & processing is done on one thread to prevent race conditions
+
+        var gestureDetectedTime = 0L
+
         SensorDataSubject.instance.observe()
                 .subscribeOn(Schedulers.newThread())
                 .map { sensorMsg: SensorMessage ->
@@ -68,26 +71,26 @@ class GestureRecognizer(activity: Activity) {
                 .filter { it }
                 .subscribe {
                     // predict a gesture only if we have to
-                    val gestureType = when(skipGestureCount) {
-                        0 -> {
+                    val skipGesture = System.currentTimeMillis() < gestureDetectedTime + RECOGNITION_COOLDOWN
+                    val gestureType = when(skipGesture) {
+                        false -> {
                             val gestureTypePrediction =
                                     predict(accelerationWindow.iterator(),
                                             gyroscopeWindow.iterator(),
                                             WINDOW_SIZE)
 
                             // skip slightly smaller than window size
-                            if (gestureTypePrediction == GestureType.DOWN)
-                                skipGestureCount = WINDOW_SIZE - 5
-                            Log.i(TAG, "predicted: ${gestureTypePrediction.name}")
+                            if (gestureTypePrediction == GestureType.DOWN) {
+                                gestureDetectedTime = System.currentTimeMillis()
+                            }
                             gestureTypePrediction
                         }
-                        else -> {
-                            skipGestureCount -= 1
-                            Log.i(TAG, "skipping gesture prediction")
+                        true -> {
+                            // Log.i(TAG, "skipping gesture prediction")
                             GestureType.NO_GESTURE
                         }
                     }
-                    val gestureTime = accelerationHistory.first.timestamp
+                    val gestureTime = accelerationWindow.first.timestamp
                     accelerationWindow.removeFirst()
                     gyroscopeWindow.removeFirst()
                     listener(Gesture(gestureType, gestureTime))
