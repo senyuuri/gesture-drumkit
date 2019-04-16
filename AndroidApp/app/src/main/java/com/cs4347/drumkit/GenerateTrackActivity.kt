@@ -63,7 +63,6 @@ class GenerateTrackActivity : Activity() {
     )
     private val disposables: CompositeDisposable = CompositeDisposable()
     private val gestureRecognizer = GestureRecognizer(this)
-    private val mutex = Semaphore(1, true)
 
     private lateinit var instrumentsAdapter: DrumKitInstrumentsAdapter
     private var tempo = tempoRange.first
@@ -160,44 +159,13 @@ class GenerateTrackActivity : Activity() {
                 // there is no guarantee whether first gesture detected in the window is
                 // from the start, middle, or end of the window
                 // (due to ml recognition)
-                // subsequent detected gestures may also come from earlier parts of the window
-                // (due to multithreading)
-
-                // The following is an example sequence of gestures
-                // ... a3 > a2 > ...(some time)... b2 > b1 > b4 ...
-                // (a & b are single gestures from the user. each spans 4 frames)
-
-                // ignore any gesture that happens recently from the prev gesture
-                // ignore any gesture that happened in the past
-                // (assumes that gestures are detected mostly in sequential order)
-
-                // check sequential assumption
-                if (lastGestureTime - gesture.time >= recentMessageThreshold/2) {
-                    throw AssertionError("multithreading bug: gestures are not detected in sequential order at all")
-                }
-
-                // only respond to new gestures
-                if (lastGestureTime < gesture.time) {
-                    // lock timing check & assignment
-                    mutex.acquire()
-                    val gestureIsTooRecent = (gesture.time - lastGestureTime) < recentMessageThreshold
-                    if (!gestureIsTooRecent) {
-                        lastGestureTime = gesture.time
-                        mutex.release()
-
-                        // call on ui thread
-                        Single.just(Unit)
-                                .subscribeOn(AndroidSchedulers.mainThread())
-                                .subscribe { _, _ ->
-                                    // casting is safe here, a track is always selected after play()
-                                    val beatIdx = native_insertBeat(selectedInstrumentRow!!)
-                                    setSelectedInstrumentBeat(beatIdx, true)
-                                }
-                    } else {
-                        mutex.release()
-                    }
-                }
-
+                Single.just(Unit)
+                        .subscribeOn(AndroidSchedulers.mainThread())
+                        .subscribe { _, _ ->
+                            // casting is safe here, a track is always selected after play()
+                            val beatIdx = native_insertBeat(selectedInstrumentRow!!)
+                            setSelectedInstrumentBeat(beatIdx, true)
+                        }
             }
         }
 

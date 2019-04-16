@@ -78,10 +78,12 @@ class GestureRecognizer(activity: Activity) {
                             // skip slightly smaller than window size
                             if (gestureTypePrediction == GestureType.DOWN)
                                 skipGestureCount = WINDOW_SIZE - 5
+                            Log.i(TAG, "predicted: ${gestureTypePrediction.name}")
                             gestureTypePrediction
                         }
                         else -> {
                             skipGestureCount -= 1
+                            Log.i(TAG, "skipping gesture prediction")
                             GestureType.NO_GESTURE
                         }
                     }
