@@ -1,92 +1,99 @@
 package com.cs4347.drumkit.gestures
 
 import Sensor.WatchPacket.SensorMessage
-import android.content.Context
 import android.util.Log
-import android.widget.Toast
 import com.cs4347.drumkit.transmission.SensorDataSubject
 import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
-import io.reactivex.subjects.PublishSubject
 import java.lang.Math.abs
-import java.sql.Time
 import java.util.*
 import java.util.concurrent.Semaphore
-import java.nio.channels.FileChannel.MapMode.READ_ONLY
-import android.content.res.AssetFileDescriptor
 import android.app.Activity
-import org.tensorflow.lite.Interpreter
-import java.io.FileInputStream
-import java.io.IOException
-import java.nio.MappedByteBuffer
-import java.nio.channels.FileChannel
 
 
-enum class GestureType {DOWN, UP, LEFT, RIGHT, FRONT, BACK}
+enum class GestureType {NO_GESTURE, DOWN, UP}
 data class Gesture(val type: GestureType, val time: Long)
+
+interface Model {
+    /**
+     * Feeds data into the model
+     * @property accelerationIterator iterator for acceleration data
+     * @property gyroIterator iterator for gyroscope data
+     * @property count number of times to iterate through the iterator
+     */
+    fun predict(accelerationIterator: Iterator<SensorMessage>,
+                gyroIterator: Iterator<SensorMessage>,
+                count: Int): GestureType
+}
 
 class GestureRecognizer(activity: Activity) {
 
     companion object {
-        const val WINDOW_SIZE = 50 // number of groups of 5ms data
         private const val NUM_SENSORS = 2
         private const val HISTORY_SIZE = 200
-        private val DATA_ITEMS_PER_MSG = 3+1 // 3 axes, 1 type (accelerometer, gyroscope)
-        private val MODEL_INPUT_SIZE = NUM_SENSORS * WINDOW_SIZE * DATA_ITEMS_PER_MSG
         private const val TAG = "GestureRecognizer"
-        private const val MODEL_LOCATION = "converted_model.tflite"
+        private const val RECOGNITION_COOLDOWN = 500 // ms
+        const val WINDOW_SIZE = 50 // number of groups of 5ms data
+        const val DATA_ITEMS_PER_MSG = 4 // 3 axes + 1 type (accelerometer, gyroscope)
+        const val MODEL_INPUT_SIZE = NUM_SENSORS * WINDOW_SIZE * DATA_ITEMS_PER_MSG
 
         // 5ms between each message item
         const val MESSAGE_PERIOD = 5
     }
 
-    protected val tflite: Interpreter = Interpreter(loadModelFile(activity))
-
-    @Throws(IOException::class)
-    private fun loadModelFile(activity: Activity): MappedByteBuffer {
-        val fileDescriptor = activity.assets.openFd(MODEL_LOCATION)
-        val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
-        val fileChannel = inputStream.channel
-        val startOffset = fileDescriptor.startOffset
-        val declaredLength = fileDescriptor.declaredLength
-        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
-    }
-
     private val accelerationWindow: LinkedList<SensorMessage> = LinkedList()
     private val gyroscopeWindow: LinkedList<SensorMessage> = LinkedList()
-    private val accelerationHistory: LinkedList<SensorMessage> = LinkedList()
     private val compositeDisposable = CompositeDisposable()
+    private var model: Model = TfLiteModel(activity)
+    private val accelerationHistory: LinkedList<SensorMessage> = LinkedList()
+
     var returnFakeGestureAfter2SecsOfData = false
 
     /**
      * Subscribe to gestures & respond on listener
-     * Listener is executed by the computation scheduler (multithreaded)
+     * Listener is executed by a thread from Schedulers.single()
      */
     fun subscribeToGestures(listener: (Gesture) -> Unit) {
-        // all data wrangling is done on one thread to prevent race conditions
-        // prediction is done on multiple threads (num threads = num cores)
+        // all data wrangling & processing is done on one thread to prevent race conditions
+
+        var gestureDetectedTime = 0L
+
         SensorDataSubject.instance.observe()
-                .subscribeOn(Schedulers.single())
+                .subscribeOn(Schedulers.newThread())
                 .map { sensorMsg: SensorMessage ->
-                    // rxjava2 doesn't let us pass nulls
-                    // wrap it in a pair instead
+                    // returns true if there is sufficient data for predicting gesture
                     processSensorData(sensorMsg)
                 }
                 .doOnError {
                     Log.e(TAG, "ERROR with gesture recog subscription!!!! \n $it")
-                    //Toast.makeText(context,
-                    //        "Data stream has died!", Toast.LENGTH_SHORT).show()
                 }
-                .filter { potentialModelInput ->
-                    // discard empty inputs
-                    potentialModelInput.first
-                }
-                .observeOn(Schedulers.computation())
-                .subscribe { modelInput: Pair<Boolean, FloatArray?> ->
-                    // cast is safe, empty inputs are already filtered out
-                    predict(modelInput.second!!)
-                            ?.let { gesture -> listener(gesture) }
+                // do not predict gesture if there is insufficient data
+                .filter { it }
+                .subscribe {
+                    // predict a gesture only if we have to
+                    val skipGesture = System.currentTimeMillis() < gestureDetectedTime + RECOGNITION_COOLDOWN
+                    val gestureType = when(skipGesture) {
+                        false -> {
+                            val gestureTypePrediction =
+                                    predict(accelerationWindow.iterator(),
+                                            gyroscopeWindow.iterator(),
+                                            WINDOW_SIZE)
+
+                            // skip slightly smaller than window size
+                            if (gestureTypePrediction == GestureType.DOWN) {
+                                gestureDetectedTime = System.currentTimeMillis()
+                            }
+                            gestureTypePrediction
+                        }
+                        true -> {
+                            // Log.i(TAG, "skipping gesture prediction")
+                            GestureType.NO_GESTURE
+                        }
+                    }
+                    val gestureTime = accelerationWindow.first.timestamp
+                    accelerationWindow.removeFirst()
+                    gyroscopeWindow.removeFirst()
+                    listener(Gesture(gestureType, gestureTime))
                 }
                 .apply {
                     compositeDisposable.add(this)
@@ -108,9 +115,9 @@ class GestureRecognizer(activity: Activity) {
 
     /**
      * Processes raw sensor messages
-     * @return data processed for model input, returned only when enough raw messages are processed
+     * @return returns true if there is sufficient data for model to take in
      */
-    private fun processSensorData(message: SensorMessage): Pair<Boolean, FloatArray?> {
+    private fun processSensorData(message: SensorMessage): Boolean {
         // TODO: track accel history later on, to do acceleration tricks
 
         // TODO preprocess data, read json in ../models for the values
@@ -145,30 +152,7 @@ class GestureRecognizer(activity: Activity) {
         val hasSufficientData = !(accelerationWindow.size < WINDOW_SIZE
                 || gyroscopeWindow.size < WINDOW_SIZE)
 
-        if (hasSufficientData) {
-            val processedData = FloatArray(MODEL_INPUT_SIZE)
-            val gyIterator = gyroscopeWindow.iterator()
-            val accelIterator = accelerationWindow.iterator()
-
-            // TODO: verify that model takes data in this order
-            var inputIdx = 0
-            for (i in 0 until WINDOW_SIZE) {
-                for (gyData in gyIterator.next().dataList) {
-                    processedData[inputIdx] = gyData
-                    inputIdx += 1
-                }
-                for (accelData in accelIterator.next().dataList) {
-                    processedData[inputIdx] = accelData
-                    inputIdx += 1
-                }
-            }
-            accelerationWindow.removeFirst()
-            gyroscopeWindow.removeFirst()
-            return Pair(true, processedData)
-
-        } else {
-            return Pair(false, null)
-        }
+        return hasSufficientData
     }
 
     // TODO: remove after debugging
@@ -177,14 +161,12 @@ class GestureRecognizer(activity: Activity) {
     private val fakeGestureAfterNCounts = 2 * 1000 / MESSAGE_PERIOD
     private val mockGestureMutex = Semaphore(1, true)
 
-    private fun predict(data: FloatArray): Gesture? {
-        // ensure data queue uses the same data type as what is required here
-        // so we don't waste time copying data
-        // ignore subsequent requests to predict if a gesture is detected
-        // TODO: supposed to predict gesture with data, $data"
+    private fun predict(accelerationIterator: Iterator<SensorMessage>,
+                        gyroIterator: Iterator<SensorMessage>,
+                        count: Int): GestureType {
 
-        // tflite.run(data, arrayOf("up", "down"))
-
+        // TODO: remove after debugging
+        // gesture debugging code
         if (returnFakeGestureAfter2SecsOfData) {
             mockGestureMutex.acquire()
             predictCountDebug += 1
@@ -193,14 +175,17 @@ class GestureRecognizer(activity: Activity) {
                 Log.d(TAG, "Predicting a fake gesture")
                 predictCountDebug = 0
                 mockGestureMutex.release()
-                return Gesture(GestureType.DOWN, System.currentTimeMillis());
+                return GestureType.DOWN
             } else {
                 mockGestureMutex.release()
-                return null
+                return GestureType.NO_GESTURE
             }
         }
-        return null
-    }
 
+        return model.predict(
+                accelerationIterator,
+                gyroIterator,
+                count)
+    }
 }
 
