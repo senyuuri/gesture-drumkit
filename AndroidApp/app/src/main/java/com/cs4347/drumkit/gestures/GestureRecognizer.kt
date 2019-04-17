@@ -36,7 +36,7 @@ class GestureRecognizer(activity: Activity,
         private const val TAG = "GestureRecognizer"
 
         const val WINDOW_SIZE = 50 // number of groups of 5ms data
-        const val DATA_ITEMS_PER_MSG = 4 // 3 axes + 1 type (accelerometer, gyroscope)
+        const val DATA_ITEMS_PER_MSG = 3 // 3 axes
         const val MODEL_INPUT_SIZE = NUM_SENSORS * WINDOW_SIZE * DATA_ITEMS_PER_MSG
         const val MESSAGE_PERIOD = 5 // 5ms between each message item
 
@@ -49,7 +49,7 @@ class GestureRecognizer(activity: Activity,
     private var experimentalMode = false
 
     // tempo 60 has cooldown of 900, tempo 120 has cooldown of 400
-    private val coolDownRange = Pair(900, 350)
+    private val coolDownRange = Pair(700, 450)
     private val coolDownStepSize = let {
         val numTempoIntervals = (tempoRange.second - tempoRange.first)/tempoStepSize
         (coolDownRange.first - coolDownRange.second)/numTempoIntervals
