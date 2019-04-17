@@ -42,7 +42,6 @@ class GestureRecognizer(activity: Activity,
         const val DATA_ITEMS_PER_MSG = 3 // 3 axes
         const val MODEL_INPUT_SIZE = NUM_SENSORS * WINDOW_SIZE * DATA_ITEMS_PER_MSG
         const val MESSAGE_PERIOD = 5 // 5ms between each message item
-
     }
 
     private val accelerationWindow: LinkedList<SensorMessage> = LinkedList()

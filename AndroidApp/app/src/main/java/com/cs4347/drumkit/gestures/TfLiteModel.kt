@@ -1,6 +1,7 @@
 package com.cs4347.drumkit.gestures
 
 import android.app.Activity
+import android.util.Log
 import com.cs4347.drumkit.transmission.SensorDataSubject
 import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
@@ -62,6 +63,7 @@ class TfLiteModel(activity: Activity): Model {
     override fun predict(accelerationIterator: Iterator<Sensor.WatchPacket.SensorMessage>,
                          gyroIterator: Iterator<Sensor.WatchPacket.SensorMessage>,
                          count: Int, applyRotationOffset: Boolean): GestureType {
+        // val start = System.currentTimeMillis()
         inputBuffer.rewind()
 
         val gravityData = SensorDataSubject.instance.mostRecentGravityData
@@ -104,6 +106,8 @@ class TfLiteModel(activity: Activity): Model {
             }
         }
         val prediction = oneHotToGestureLabel[maxId]
+        // val end = System.currentTimeMillis()
+        // Log.i("RECOG BENCH", "recog took: ${end - start}")
 
         if (applyRotationOffset) {
             if (prediction == GestureType.UP) {

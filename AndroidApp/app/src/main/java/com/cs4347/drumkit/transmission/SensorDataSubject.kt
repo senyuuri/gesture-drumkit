@@ -37,7 +37,8 @@ class SensorDataSubject private constructor() {
                     // assert that packets are received in chronological order
                     val currPacketTime = packet.getMessages(0).timestamp
                     if (prevPacketTime > currPacketTime) {
-                        throw AssertionError("Order of WatchPackets received is not chronological, handle it!")
+                        Log.e(TAG, "SUPER DELAYED PACKET FOUND, DROP SOME PACKETS TO FIX THIS!!")
+                        // throw AssertionError("Order of WatchPackets received is not chronological, handle it!")
                     }
                     prevPacketTime = currPacketTime
 
