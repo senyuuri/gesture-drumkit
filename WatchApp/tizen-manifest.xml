@@ -2,7 +2,7 @@
 <manifest xmlns="http://tizen.org/ns/packages" api-version="2.3.2" package="org.tizen.helloaccessoryconsumer" version="1.0.0">
     <profile name="wearable"/>
     <ui-application appid="org.tizen.helloaccessoryconsumer" exec="helloaccessoryconsumer" multiple="false" nodisplay="false" taskmanage="true" type="capp">
-        <label>HelloAccessoryConsumer</label>
+        <label>DrumKit</label>
         <icon>helloaccessory.png</icon>
         <metadata key="accessory-services-location" value="/res/xml/accessoryservices.xml"/>
         <metadata key="launch-on-attach" value="false"/>

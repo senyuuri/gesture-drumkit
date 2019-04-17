@@ -164,7 +164,7 @@ static char *_gl_title_text_get(void *data, Evas_Object *obj, const char *part)
 {
 	char buf[1024];
 
-	snprintf(buf, 1023, "%s", "HelloAccessory");
+	snprintf(buf, 1023, "%s", "Gesture Drumkit");
 
 	return strdup(buf);
 }
@@ -173,7 +173,7 @@ static char *_gl_sub_title_text_get(void *data, Evas_Object *obj, const char *pa
 {
 	char buf[1024];
 
-	snprintf(buf, 1023, "%s", "Consumer");
+	snprintf(buf, 1023, "%s", "Controls");
 
 	return strdup(buf);
 }
