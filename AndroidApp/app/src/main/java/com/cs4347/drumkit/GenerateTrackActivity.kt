@@ -116,6 +116,10 @@ class GenerateTrackActivity : Activity() {
         }
     }
 
+    private fun safeModulus(a: Int, b: Int): Int {
+        return (a % b + b) % b
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         hideNavBar()
@@ -182,7 +186,7 @@ class GenerateTrackActivity : Activity() {
                                 .subscribeOn(AndroidSchedulers.mainThread())
                                 .subscribe { _, _ ->
                                     drumkit_instruments.instrumentsRecycler
-                                            .getChildAt(selectedInstrumentRow!!-1)
+                                            .getChildAt(safeModulus(selectedInstrumentRow!!-1, instruments.size))
                                             .performClick()
                                     // TODO: PLAY SOME SOUND?
                                 }
@@ -192,7 +196,7 @@ class GenerateTrackActivity : Activity() {
                                 .subscribeOn(AndroidSchedulers.mainThread())
                                 .subscribe { _, _ ->
                                     drumkit_instruments.instrumentsRecycler
-                                            .getChildAt(selectedInstrumentRow!!+1)
+                                            .getChildAt(safeModulus(selectedInstrumentRow!!+1, instruments.size))
                                             .performClick()
                                     // TODO: PLAY SOME SOUND?
                                 }
