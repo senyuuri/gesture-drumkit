@@ -66,12 +66,11 @@ class StartingActivity : Activity() {
     override fun onRequestPermissionsResult(requestCode: Int,
                                             @NonNull permissions: Array<String>,
                                             @NonNull grantResults: IntArray) {
-        // Make sure it's our original READ_CONTACTS request
         if (requestCode == WRITE_TO_FILE_REQUEST) {
             if (grantResults.size == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(this, "Write to file permission granted", Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(this, "Read Contacts permission denied", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Write to file permission denied", Toast.LENGTH_SHORT).show()
             }
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults)
