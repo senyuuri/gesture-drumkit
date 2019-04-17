@@ -18,10 +18,12 @@
 
         <activity android:name=".GenerateTrackActivity"
                   android:theme="@style/AppTheme.NoActionBar"
+                  android:keepScreenOn="true"
             android:screenOrientation="landscape">
         </activity>
         <activity
             android:name=".StartingActivity"
+            android:keepScreenOn="true"
             android:launchMode="singleInstance"
             android:screenOrientation="portrait">
             <intent-filter>
@@ -31,6 +33,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".RecordingActivity"
+                  android:keepScreenOn="true"
                   android:screenOrientation="portrait"/>
 
         <service android:name="com.samsung.android.sdk.accessory.SAService"/>
