@@ -104,7 +104,7 @@ class GestureRecognizer(activity: Activity,
                                     predictWrapper(accelerationWindow.iterator(),
                                             gyroscopeWindow.iterator(),
                                             WINDOW_SIZE,
-                                            watchFaceIsFacingRight())
+                                            experimentalMode && watchFaceIsFacingRight())
 
                             // skip slightly smaller than window size
                             when (gestureTypePrediction) {
