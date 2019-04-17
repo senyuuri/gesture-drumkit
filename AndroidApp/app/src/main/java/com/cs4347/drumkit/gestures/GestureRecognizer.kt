@@ -11,19 +11,22 @@ import java.util.concurrent.Semaphore
 import android.app.Activity
 
 
-enum class GestureType {NO_GESTURE, DOWN, UP}
+enum class GestureType {NO_GESTURE, DOWN, UP, LEFT, RIGHT}
 data class Gesture(val type: GestureType, val time: Long)
 
 interface Model {
     /**
      * Feeds data into the model
+     * Supports swapping of axes to get gestures for free
      * @property accelerationIterator iterator for acceleration data
      * @property gyroIterator iterator for gyroscope data
      * @property count number of times to iterate through the iterator
+     * @property swapAxes should swap axes (up/down=> left/right ay, az swap)
      */
     fun predict(accelerationIterator: Iterator<SensorMessage>,
                 gyroIterator: Iterator<SensorMessage>,
-                count: Int): GestureType
+                count: Int,
+                swapAxes: Boolean): GestureType
 }
 
 // default interval of tempo is 60-120, step size 10
@@ -49,13 +52,15 @@ class GestureRecognizer(activity: Activity,
     private var experimentalMode = false
 
     // tempo 60 has cooldown of 900, tempo 120 has cooldown of 400
-    private val coolDownRange = Pair(700, 450)
-    private val coolDownStepSize = let {
+    private val tempoCoolDownRange = Pair(700, 450)
+    private val tempoCoolDownStepSize = let {
         val numTempoIntervals = (tempoRange.second - tempoRange.first)/tempoStepSize
-        (coolDownRange.first - coolDownRange.second)/numTempoIntervals
+        (tempoCoolDownRange.first - tempoCoolDownRange.second)/numTempoIntervals
     }
 
-    private var recognitionCoolDownDuration = coolDownRange.first // ms
+    private val changeInstrumentCoolDownDuration = 1000 //ms
+    private var beatCoolDownDuration = tempoCoolDownRange.first // ms
+    private var recognitionCoolDown = 0
 
     var returnFakeGestureAfter2SecsOfData = false
 
@@ -63,9 +68,9 @@ class GestureRecognizer(activity: Activity,
         experimentalMode = isOn
     }
 
-    fun updateRecognitionCoolDown(tempo: Int) {
+    fun updateBeatCoolDown(tempo: Int) {
         val steps = (tempo - tempoRange.first) / tempoStepSize
-        recognitionCoolDownDuration = coolDownRange.first - (steps*coolDownStepSize)
+        beatCoolDownDuration = tempoCoolDownRange.first - (steps*tempoCoolDownStepSize)
     }
 
     /**
@@ -74,9 +79,10 @@ class GestureRecognizer(activity: Activity,
      */
     fun subscribeToGestures(initialTempo: Int, listener: (Gesture) -> Unit) {
         // all data wrangling & processing is done on one thread to prevent race conditions
-        updateRecognitionCoolDown(initialTempo)
+        updateBeatCoolDown(initialTempo)
 
         var gestureDetectedTime = 0L
+        val pass = Unit
 
         SensorDataSubject.instance.observe()
                 .subscribeOn(Schedulers.newThread())
@@ -91,17 +97,29 @@ class GestureRecognizer(activity: Activity,
                 .filter { it }
                 .subscribe {
                     // predict a gesture only if we have to
-                    val skipGesture = System.currentTimeMillis() < gestureDetectedTime + recognitionCoolDownDuration
+                    val skipGesture = System.currentTimeMillis() - gestureDetectedTime < recognitionCoolDown
                     val gestureType = when(skipGesture) {
                         false -> {
                             val gestureTypePrediction =
-                                    predict(accelerationWindow.iterator(),
+                                    predictWrapper(accelerationWindow.iterator(),
                                             gyroscopeWindow.iterator(),
-                                            WINDOW_SIZE)
+                                            WINDOW_SIZE,
+                                            watchFaceIsFacingRight())
 
                             // skip slightly smaller than window size
-                            if (gestureTypePrediction == GestureType.DOWN) {
-                                gestureDetectedTime = System.currentTimeMillis()
+                            when (gestureTypePrediction) {
+                                GestureType.DOWN -> {
+                                    gestureDetectedTime = System.currentTimeMillis()
+                                    recognitionCoolDown = beatCoolDownDuration
+                                }
+                                GestureType.RIGHT,
+                                GestureType.LEFT -> {
+                                    gestureDetectedTime = System.currentTimeMillis()
+                                    recognitionCoolDown = changeInstrumentCoolDownDuration
+                                }
+                                else -> {
+                                    // do nothing
+                                }
                             }
                             gestureTypePrediction
                         }
@@ -177,9 +195,9 @@ class GestureRecognizer(activity: Activity,
     private val fakeGestureAfterNCounts = 2 * 1000 / MESSAGE_PERIOD
     private val mockGestureMutex = Semaphore(1, true)
 
-    private fun predict(accelerationIterator: Iterator<SensorMessage>,
+    private fun predictWrapper(accelerationIterator: Iterator<SensorMessage>,
                         gyroIterator: Iterator<SensorMessage>,
-                        count: Int): GestureType {
+                        count: Int, swapAxes: Boolean): GestureType {
 
         // gesture debugging code
         if (returnFakeGestureAfter2SecsOfData) {
@@ -200,7 +218,32 @@ class GestureRecognizer(activity: Activity,
         return model.predict(
                 accelerationIterator,
                 gyroIterator,
-                count)
+                count,
+                swapAxes)
+    }
+
+
+    // watch face up
+    private val faceUpGravityTemplate = listOf(0.6292857f, 0.50838804f, 9.773225f).toFloatArray()
+    private val faceRightGravityTemplate = listOf(-0.95297813f, -9.759948f, -0.075071335f).toFloatArray()
+
+    private fun watchFaceIsFacingRight(): Boolean {
+        val mostRecentGravityData = SensorDataSubject.instance.mostRecentGravityData.toFloatArray()
+        val similarityToFaceUp = cosineSimilarity(faceUpGravityTemplate, mostRecentGravityData)
+        val similarityToFaceRight = cosineSimilarity(faceRightGravityTemplate, mostRecentGravityData)
+        return similarityToFaceRight > similarityToFaceUp
+    }
+
+    private fun cosineSimilarity(vectorA: FloatArray, vectorB: FloatArray): Double {
+        var dotProduct = 0.0
+        var normA = 0.0
+        var normB = 0.0
+        for (i in vectorA.indices) {
+            dotProduct += vectorA[i] * vectorB[i]
+            normA += Math.pow(vectorA[i].toDouble(), 2.0)
+            normB += Math.pow(vectorB[i].toDouble(), 2.0)
+        }
+        return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB))
     }
 }
 

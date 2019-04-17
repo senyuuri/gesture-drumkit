@@ -140,13 +140,13 @@ class GenerateTrackActivity : Activity() {
         tempoUp.setOnClickListener {
             tempo = min(tempoRange.second, tempo + tempoStep)
             setTempoText()
-            gestureRecognizer.updateRecognitionCoolDown(tempo)
+            gestureRecognizer.updateBeatCoolDown(tempo)
         }
 
         tempoDown.setOnClickListener {
             tempo = max(tempoRange.first, tempo - tempoStep)
             setTempoText()
-            gestureRecognizer.updateRecognitionCoolDown(tempo)
+            gestureRecognizer.updateBeatCoolDown(tempo)
         }
 
         play.setOnClickListener {
@@ -166,15 +166,40 @@ class GenerateTrackActivity : Activity() {
                 // (due to ml recognition)
 
                 // only care about down gesture
-                if (gesture.type == GestureType.DOWN) {
-                    Log.i("Gesture Debug", "Down gesture detected at: ${gesture.time}")
-                    Single.just(Unit)
-                            .subscribeOn(AndroidSchedulers.mainThread())
-                            .subscribe { _, _ ->
-                                // casting is safe here, a track is always selected after play()
-                                val beatIdx = native_insertBeat(selectedInstrumentRow!!)
-                                setSelectedInstrumentBeat(beatIdx, true)
-                            }
+                when (gesture.type) {
+                    GestureType.DOWN -> {
+                        Log.i("Gesture Debug", "Down gesture detected at: ${gesture.time}")
+                        Single.just(Unit)
+                                .subscribeOn(AndroidSchedulers.mainThread())
+                                .subscribe { _, _ ->
+                                    // casting is safe here, a track is always selected after play()
+                                    val beatIdx = native_insertBeat(selectedInstrumentRow!!)
+                                    setSelectedInstrumentBeat(beatIdx, true)
+                                }
+                    }
+                    GestureType.LEFT -> {
+                        Single.just(Unit)
+                                .subscribeOn(AndroidSchedulers.mainThread())
+                                .subscribe { _, _ ->
+                                    drumkit_instruments.instrumentsRecycler
+                                            .getChildAt(selectedInstrumentRow!!-1)
+                                            .performClick()
+                                    // TODO: PLAY SOME SOUND?
+                                }
+                    }
+                    GestureType.RIGHT -> {
+                        Single.just(Unit)
+                                .subscribeOn(AndroidSchedulers.mainThread())
+                                .subscribe { _, _ ->
+                                    drumkit_instruments.instrumentsRecycler
+                                            .getChildAt(selectedInstrumentRow!!+1)
+                                            .performClick()
+                                    // TODO: PLAY SOME SOUND?
+                                }
+                    }
+                    else -> {
+                        // do nothing
+                    }
                 }
             }
         }
