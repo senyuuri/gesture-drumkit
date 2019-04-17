@@ -63,7 +63,7 @@ class GenerateTrackActivity : Activity() {
             "Rim" to R.color.colorRim
     )
     private val disposables: CompositeDisposable = CompositeDisposable()
-    private var gestureRecognizer: GestureRecognizer? = null
+    private val gestureRecognizer: GestureRecognizer by lazy { GestureRecognizer(this) }
 
     private lateinit var instrumentsAdapter: DrumKitInstrumentsAdapter
     private var tempo = tempoRange.first
@@ -119,8 +119,6 @@ class GenerateTrackActivity : Activity() {
         hideNavBar()
         setContentView(R.layout.activity_generate_track)
 
-        gestureRecognizer = GestureRecognizer(this)
-
         instrumentsAdapter = DrumKitInstrumentsAdapter(instruments, object: RowSelectionListener {
             override fun onRowSelected(row: Int) {
                 selectedInstrumentRow = row
@@ -138,11 +136,13 @@ class GenerateTrackActivity : Activity() {
         tempoUp.setOnClickListener {
             tempo = min(tempoRange.second, tempo + tempoStep)
             setTempoText()
+            gestureRecognizer.updateRecognitionCoolDown(tempo)
         }
 
         tempoDown.setOnClickListener {
             tempo = max(tempoRange.first, tempo - tempoStep)
             setTempoText()
+            gestureRecognizer.updateRecognitionCoolDown(tempo)
         }
 
         play.setOnClickListener {
@@ -153,7 +153,7 @@ class GenerateTrackActivity : Activity() {
         record.setOnClickListener {
             play()
 
-            gestureRecognizer!!.subscribeToGestures { gesture ->
+            gestureRecognizer.subscribeToGestures(tempo) { gesture ->
                 // a single gesture by the user is be detected as
                 // multiple gestures happening around the same time
 
@@ -177,7 +177,7 @@ class GenerateTrackActivity : Activity() {
 
         pause.setOnClickListener {
             pause()
-            gestureRecognizer!!.stopSubscriptionToGestures()
+            gestureRecognizer.stopSubscriptionToGestures()
         }
 
         // pause when seekbar is adjusted by user
