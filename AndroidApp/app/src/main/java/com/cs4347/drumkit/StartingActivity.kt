@@ -33,6 +33,12 @@ class StartingActivity : Activity() {
             startActivity(intent)
         }
 
+        go_to_generate_track_debug_btn.setOnClickListener {
+            val intent = Intent(this, GenerateTrackActivity::class.java)
+            intent.putExtra(GenerateTrackActivity.DEBUG_MODE_EXTRA, true)
+            startActivity(intent)
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             getPermissionToWriteToFile()
         }

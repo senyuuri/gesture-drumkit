@@ -20,14 +20,24 @@
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_below="@id/hi_filler"
+        android:layout_marginTop="60dp"
         android:text="Go to recording activity"/>
 
     <Button
         android:id="@+id/go_to_generate_track_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/hi_filler"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="120dp"
+        android:layout_below="@id/go_to_recording_btn"
+        android:layout_marginTop="60dp"
         android:text="Go to generate track activity"/>
+
+    <Button
+        android:id="@+id/go_to_generate_track_debug_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/go_to_generate_track_btn"
+        android:layout_marginTop="60dp"
+        android:text="Go to generate track activity (debug)"/>
 </RelativeLayout>

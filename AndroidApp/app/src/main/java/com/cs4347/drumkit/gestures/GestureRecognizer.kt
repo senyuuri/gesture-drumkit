@@ -166,7 +166,7 @@ class GestureRecognizer(activity: Activity,
         return hasSufficientData
     }
 
-    // TODO: remove after debugging
+    // debugging code
     private var predictCountDebug = 0
     // 2 * 1000ms / MESSAGE_PERIOD, a gesture every 2s
     private val fakeGestureAfterNCounts = 2 * 1000 / MESSAGE_PERIOD
@@ -176,7 +176,6 @@ class GestureRecognizer(activity: Activity,
                         gyroIterator: Iterator<SensorMessage>,
                         count: Int): GestureType {
 
-        // TODO: remove after debugging
         // gesture debugging code
         if (returnFakeGestureAfter2SecsOfData) {
             mockGestureMutex.acquire()
