@@ -69,6 +69,7 @@ class GenerateTrackActivity : Activity() {
     private lateinit var instrumentsAdapter: DrumKitInstrumentsAdapter
     private var tempo = tempoRange.first
     private var selectedInstrumentRow: Int? = null
+    private var experimentalMode: Boolean = false
 
     private var seekBarMovementDisposable: Disposable? = null
     private var sensorDataDisposable: Disposable? = null
@@ -197,6 +198,21 @@ class GenerateTrackActivity : Activity() {
         clear.setOnClickListener {
             uiClearSelectedInstrumentBeats()
             native_resetTrack(selectedInstrumentRow!!)
+        }
+
+        toggle_experimental_mode.setOnClickListener {
+            experimentalMode = !experimentalMode
+            gestureRecognizer.setExperimentalMode(experimentalMode)
+
+            val onOffText = when (experimentalMode) {
+                true -> "ON"
+                false -> "OFF"
+            }
+
+            Toast.makeText(this@GenerateTrackActivity,
+                    "Toggled experimental mode, $onOffText",
+                    Toast.LENGTH_LONG).show()
+            toggle_experimental_mode.text = "Experimental($onOffText)"
         }
 
         if (debugMode) {

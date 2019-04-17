@@ -46,6 +46,7 @@ class GestureRecognizer(activity: Activity,
     private val gyroscopeWindow: LinkedList<SensorMessage> = LinkedList()
     private val compositeDisposable = CompositeDisposable()
     private var model: Model = TfLiteModel(activity)
+    private var experimentalMode = false
 
     // tempo 60 has cooldown of 900, tempo 120 has cooldown of 400
     private val coolDownRange = Pair(900, 400)
@@ -57,6 +58,10 @@ class GestureRecognizer(activity: Activity,
     private var recognitionCoolDownDuration = coolDownRange.second // ms
 
     var returnFakeGestureAfter2SecsOfData = false
+
+    fun setExperimentalMode(isOn: Boolean) {
+        experimentalMode = isOn
+    }
 
     fun updateRecognitionCoolDown(tempo: Int) {
         val steps = (tempo - tempoRange.first) / tempoStepSize
