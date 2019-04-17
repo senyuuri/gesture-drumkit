@@ -30,11 +30,10 @@ class TfLiteModel(activity: Activity): Model {
 
     private val oneHotToGestureLabel = listOf(GestureType.UP, GestureType.DOWN, GestureType.NO_GESTURE)
 
+    /* Normalization was not really helpful in experiments
     private fun normalizationTransform(input: Float, transform_min: Float, transform_max: Float): Float {
         return 2*(input - transform_min)/(transform_max - transform_min)-1
     }
-
-    /* Not really helpful in experiments
     private val normalizationData = hashMapOf(
             "col_min" to floatArrayOf(0.0f, -356.44f, -1178.73f, -294.77f),
             "col_max" to floatArrayOf(1.0f, 314.86002f, 666.05f, 216.51f)
@@ -58,16 +57,25 @@ class TfLiteModel(activity: Activity): Model {
 
     override fun predict(accelerationIterator: Iterator<Sensor.WatchPacket.SensorMessage>,
                          gyroIterator: Iterator<Sensor.WatchPacket.SensorMessage>,
-                         count: Int): GestureType {
+                         count: Int, swapAxes: Boolean): GestureType {
         inputBuffer.rewind()
+        //* @property swapAxes should swap axes (up/down=> left/right ay, az swap)
         for (i in 0 until count) {
-            for (data in accelerationIterator.next().dataList) {
-                inputBuffer.putFloat(data)
+            val dataList = accelerationIterator.next().dataList
+            for (j in 0 until dataList.size) {
+                if (swapAxes && j == 1) {
+                    inputBuffer.putFloat(dataList[1]-9.81f)
+                } else if (swapAxes && j == 2) {
+                    inputBuffer.putFloat(dataList[2]-9.81f)
+                } else {
+                    inputBuffer.putFloat(dataList[j])
+                }
             }
         }
         for (i in 0 until count) {
-            for (data in gyroIterator.next().dataList) {
-                inputBuffer.putFloat(data)
+            val dataList = gyroIterator.next().dataList
+            for (j in 0 until dataList.size) {
+                inputBuffer.putFloat(dataList[j])
             }
         }
         tflite.run(inputBuffer, outputArray)
@@ -80,7 +88,19 @@ class TfLiteModel(activity: Activity): Model {
                 maxVal = newVal
             }
         }
-        return oneHotToGestureLabel[maxId]
+        val prediction = oneHotToGestureLabel[maxId]
+
+        if (swapAxes) {
+            if (prediction == GestureType.UP) {
+                return GestureType.RIGHT
+            }
+            if (prediction == GestureType.DOWN) {
+                return GestureType.LEFT
+            }
+            return GestureType.NO_GESTURE
+        } else {
+            return prediction
+        }
     }
 
 }

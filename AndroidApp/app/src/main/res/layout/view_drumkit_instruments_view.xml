@@ -41,10 +41,10 @@
         app:layout_constraintTop_toBottomOf="@+id/seek_bar"
         />
 
-    <!--width: 34(box size)*16 + 4x4(extra box margin) + 32(seekbar padding) = 588 -->
+    <!--width: 34(box size)*16 + 4x2(extra box margin) + 32(seekbar l/r padding) + 4(unknown magic space) = 588 -->
     <SeekBar
         android:id="@+id/seek_bar"
-        android:layout_width="592dp"
+        android:layout_width="588dp"
         android:layout_height="18dp"
         android:layout_marginLeft="86dp"
         android:paddingEnd="16dp"

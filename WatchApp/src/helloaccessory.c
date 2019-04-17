@@ -22,10 +22,12 @@
 // to get 200hz, request an update every 5 ms
 #define UPDATE_INTERVAL 5
 #define SENSOR_COUNT 2
-// (9x2) messages uses about 430 bytes
+// (10x2) messages uses about 480 bytes
 #define BUFFER_SIZE 600
-// change the value in sensor.options if touching this (9*2)
+// change the value in sensor.options if touching this (10*2)
 #define MESSAGES_COUNT 10*SENSOR_COUNT
+// update orientation related sensor every 10*5 ms
+#define ORIENTATION_UPDATE_INTERVAL UPDATE_INTERVAL * 10
 
 static sensor_type_e sensors_used[] = { SENSOR_ACCELEROMETER, SENSOR_GYROSCOPE };
 static bool started_sensors = false;
@@ -41,13 +43,16 @@ typedef struct _sensor_data {
 
 static struct data_info {
 	sensor_data_t sensors[SENSOR_COUNT];
+	sensor_data_t gravity_sensor;
 	uint8_t buffer[BUFFER_SIZE];
 	WatchPacket_SensorMessage message_cache[MESSAGES_COUNT];
+	WatchPacket_SensorMessage gravity_message;
 	uint8_t cache_idx;
 	size_t message_len;
 } s_info = {
 	.sensors = { {0}, },
 	.message_cache = { {0}, },
+	.gravity_message = {0},
 	.cache_idx = 0
 };
 
@@ -417,6 +422,21 @@ static void _sensor_event_cb(sensor_h sensor, sensor_event_s *event, void *data)
 	}
 }
 
+// using gravity to predict orientation of watch
+static void _orientation_event_cb(sensor_h sensor, sensor_event_s *event, void *data)
+{
+	WatchPacket_SensorMessage* msg = &s_info.gravity_message;
+	// orientation is hardcoded to 2
+	msg->sensor_type = 2;
+	// timestamp not important
+	msg->timestamp = 0;
+
+	float *values = &event->values[0];
+	for (int i = 0; i < event->value_count; i++) {
+		msg->data[i] = values[i];
+	}
+}
+
 
 static void _threaded_send_msg(void *data, Ecore_Thread *thread)
 {	
@@ -446,6 +466,7 @@ static void _send_message() {
 		// struct copy
 		packet->messages[i] = s_info.message_cache[i];
 	}
+	packet->gravity = s_info.gravity_message;
 
 	// reset cache_idx after copying all the messages
 	s_info.cache_idx = 0;
@@ -494,6 +515,7 @@ void _print_sensor_info(sensor_h *s){
 //	dlog_print(DLOG_DEBUG, TAG, "[sensor_info] max_batch_count: %d", max_batch_count);
 }
 
+
 static void _initialize_sensors(void)
 {
 	dlog_print(DLOG_DEBUG, TAG, "init sensors");
@@ -536,6 +558,47 @@ static void _initialize_sensors(void)
 
 		dlog_print(DLOG_DEBUG, TAG, "started sensor type: %d", st);
 	}
+
+	// initialize orientation sensor
+	sensor_type_e st = SENSOR_GRAVITY;
+	int sensor_idx = 2;
+	bool supported = false;
+	sensor_is_supported(st, &supported);
+
+	dlog_print(DLOG_ERROR, TAG, "[%s:%d] grav supported_or_not() %d", __FILE__, __LINE__, supported);
+
+	// st = SENSOR_GYROSCOPE_ROTATION_VECTOR;
+
+	ret = sensor_get_default_sensor(st, &s_info.gravity_sensor.handle);
+	//_print_sensor_info(&s_info.sensors[i].handle);
+	if (ret != SENSOR_ERROR_NONE) {
+		dlog_print(DLOG_ERROR, TAG, "[%s:%d] sensor_get_default_sensor() error: %s", __FILE__, __LINE__, get_error_message(ret));
+	}
+
+	ret = sensor_create_listener(s_info.gravity_sensor.handle, &s_info.gravity_sensor.listener);
+	if (ret != SENSOR_ERROR_NONE) {
+		dlog_print(DLOG_ERROR, TAG, "[%s:%d] sensor_create_listener() error: %s", __FILE__, __LINE__, get_error_message(ret));
+	}
+
+	ret = sensor_listener_set_event_cb(s_info.gravity_sensor.listener, ORIENTATION_UPDATE_INTERVAL, _orientation_event_cb, (void*)sensor_idx);
+	if (ret != SENSOR_ERROR_NONE) {
+		dlog_print(DLOG_ERROR, TAG, "[%s:%d] sensor_listener_set_event_cb() error: %s", __FILE__, __LINE__, get_error_message(ret));
+	}
+
+	ret = sensor_listener_set_option(s_info.gravity_sensor.listener, SENSOR_OPTION_ALWAYS_ON);
+	if (ret != SENSOR_ERROR_NONE) {
+		dlog_print(DLOG_ERROR, TAG, "[%s:%d] sensor_listener_set_option() error: %s", __FILE__, __LINE__, get_error_message(ret));
+	}
+
+	ret = sensor_listener_start(s_info.gravity_sensor.listener);
+	if (ret != SENSOR_ERROR_NONE)
+	{
+		dlog_print(DLOG_ERROR, LOG_TAG, "[%s:%d] sensor_listener_start() error: %s", __FILE__, __LINE__, get_error_message(ret));
+		return;
+	}
+
+	dlog_print(DLOG_DEBUG, TAG, "started sensor type: %d", st);
+
 }
 
 void setup_ecore() {
