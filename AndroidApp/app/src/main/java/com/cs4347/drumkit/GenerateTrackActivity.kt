@@ -181,7 +181,6 @@ class GenerateTrackActivity : Activity() {
 
         pause.setOnClickListener {
             pause()
-            gestureRecognizer.stopSubscriptionToGestures()
         }
 
         // pause when seekbar is adjusted by user
@@ -212,7 +211,7 @@ class GenerateTrackActivity : Activity() {
             Toast.makeText(this@GenerateTrackActivity,
                     "Toggled experimental mode, $onOffText",
                     Toast.LENGTH_LONG).show()
-            toggle_experimental_mode.text = "Experimental($onOffText)"
+            toggle_experimental_mode.text = "Experimental ($onOffText)"
         }
 
         if (debugMode) {
@@ -278,6 +277,7 @@ class GenerateTrackActivity : Activity() {
     }
 
     private fun pause() {
+        gestureRecognizer.stopSubscriptionToGestures()
         debug_add_beat.isEnabled = true
         setButtons(false)
         seekBarMovementDisposable?.dispose()

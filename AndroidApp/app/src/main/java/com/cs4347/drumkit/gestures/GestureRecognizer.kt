@@ -121,7 +121,7 @@ class GestureRecognizer(activity: Activity,
     }
 
     fun stopSubscriptionToGestures() {
-        compositeDisposable.dispose()
+        compositeDisposable.clear()
     }
 
     /**
