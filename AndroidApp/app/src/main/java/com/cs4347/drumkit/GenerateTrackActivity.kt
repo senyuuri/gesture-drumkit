@@ -245,7 +245,7 @@ class GenerateTrackActivity : Activity() {
                 Toast.makeText(this@GenerateTrackActivity,
                         "Mocks a gesture after 2s of data is received & processed, $onOffText",
                         Toast.LENGTH_LONG).show()
-                text = "Mock Ges($onOffText)"
+                text = "Mock Gesture($onOffText)"
             }
         }
     }
