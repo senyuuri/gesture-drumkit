@@ -63,10 +63,10 @@ class TfLiteModel(activity: Activity): Model {
         for (i in 0 until count) {
             val dataList = accelerationIterator.next().dataList
             for (j in 0 until dataList.size) {
-                if (swapAxes && j == 2) {
-                    inputBuffer.putFloat(-1*dataList[3])
-                } else if (swapAxes && j == 3) {
-                    inputBuffer.putFloat(dataList[2])
+                if (swapAxes && j == 1) {
+                    inputBuffer.putFloat(-1*dataList[2])
+                } else if (swapAxes && j == 2) {
+                    inputBuffer.putFloat(dataList[1])
                 } else {
                     inputBuffer.putFloat(dataList[j])
                 }

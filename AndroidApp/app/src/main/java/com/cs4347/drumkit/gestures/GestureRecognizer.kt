@@ -231,7 +231,9 @@ class GestureRecognizer(activity: Activity,
         val mostRecentGravityData = SensorDataSubject.instance.mostRecentGravityData.toFloatArray()
         val similarityToFaceUp = cosineSimilarity(faceUpGravityTemplate, mostRecentGravityData)
         val similarityToFaceRight = cosineSimilarity(faceRightGravityTemplate, mostRecentGravityData)
-        return similarityToFaceRight > similarityToFaceUp
+        val isFacingRight = similarityToFaceRight > similarityToFaceUp
+        Log.i(TAG, "isFacingRight: $isFacingRight")
+        return isFacingRight
     }
 
     private fun cosineSimilarity(vectorA: FloatArray, vectorB: FloatArray): Double {
