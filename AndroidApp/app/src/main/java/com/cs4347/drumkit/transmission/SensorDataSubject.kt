@@ -24,10 +24,14 @@ class SensorDataSubject private constructor() {
 
                 override fun onReceive(packet: Sensor.WatchPacket) {
                     // TODO: for debugging, delete before submission
-                    val firstMsg = packet.getMessages(0)
+                    // val firstMsg = packet.getMessages(0)
                     // Log.d(TAG, "Packet's First Msg: ${firstMsg.sensorType}, " +
                     //         "Time: ${firstMsg.timestamp}, " +
                     //         "Data: ${firstMsg.dataList}")
+                    // Log.d(TAG, "Packet's First Msg: ${firstMsg.sensorType}, " +
+                    //         "Time: ${firstMsg.timestamp}, " +
+                    //         "Data: ${firstMsg.dataList}")
+                    mostRecentGravityData = packet.gravity.dataList
 
                     // assumes no packet is dropped (should be a safe assumption)
                     // assert that packets are received in chronological order
@@ -62,6 +66,8 @@ class SensorDataSubject private constructor() {
         }
         subject = PublishSubject.create()
     }
+
+    var mostRecentGravityData = listOf(0f, 0f, 0f)
 
     fun observe(): Observable<SensorMessage> {
         return subject
