@@ -1,12 +1,16 @@
 package com.cs4347.drumkit.gestures
 
 import android.app.Activity
+import com.cs4347.drumkit.transmission.SensorDataSubject
 import org.tensorflow.lite.Interpreter
 import java.io.FileInputStream
+import java.lang.Math.pow
 import java.nio.ByteBuffer
 import java.nio.ByteOrder.nativeOrder
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
+import kotlin.math.abs
+import kotlin.math.sqrt
 
 class TfLiteModel(activity: Activity): Model {
 
@@ -57,16 +61,27 @@ class TfLiteModel(activity: Activity): Model {
 
     override fun predict(accelerationIterator: Iterator<Sensor.WatchPacket.SensorMessage>,
                          gyroIterator: Iterator<Sensor.WatchPacket.SensorMessage>,
-                         count: Int, swapAxes: Boolean): GestureType {
+                         count: Int, applyRotationOffset: Boolean): GestureType {
         inputBuffer.rewind()
-        //* @property swapAxes should swap axes (up/down=> left/right ay, az swap)
+
+        val gravityData = SensorDataSubject.instance.mostRecentGravityData
+        val gravityMagnitude = let {
+            var squareSum = 0.0
+            for (d in gravityData) {
+                squareSum += pow(d.toDouble(), 2.0)
+            }
+            sqrt(squareSum)
+        }
+        val yAccelOffset = abs(gravityData[1])
+        val zAccelOffset = gravityMagnitude - abs(gravityData[2])
+
         for (i in 0 until count) {
             val dataList = accelerationIterator.next().dataList
             for (j in 0 until dataList.size) {
-                if (swapAxes && j == 1) {
-                    inputBuffer.putFloat(dataList[1]-9.81f)
-                } else if (swapAxes && j == 2) {
-                    inputBuffer.putFloat(dataList[2]-9.81f)
+                if (applyRotationOffset && j == 1) {
+                    inputBuffer.putFloat(dataList[1]-yAccelOffset)
+                } else if (applyRotationOffset && j == 2) {
+                    inputBuffer.putFloat(dataList[2]-zAccelOffset.toFloat())
                 } else {
                     inputBuffer.putFloat(dataList[j])
                 }
@@ -90,7 +105,7 @@ class TfLiteModel(activity: Activity): Model {
         }
         val prediction = oneHotToGestureLabel[maxId]
 
-        if (swapAxes) {
+        if (applyRotationOffset) {
             if (prediction == GestureType.UP) {
                 return GestureType.RIGHT
             }

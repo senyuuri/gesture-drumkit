@@ -21,12 +21,12 @@ interface Model {
      * @property accelerationIterator iterator for acceleration data
      * @property gyroIterator iterator for gyroscope data
      * @property count number of times to iterate through the iterator
-     * @property swapAxes should swap axes (up/down=> left/right ay, az swap)
+     * @property applyRotationOffset should swap axes (up/down=> left/right ay, az swap)
      */
     fun predict(accelerationIterator: Iterator<SensorMessage>,
                 gyroIterator: Iterator<SensorMessage>,
                 count: Int,
-                swapAxes: Boolean): GestureType
+                applyRotationOffset: Boolean): GestureType
 }
 
 // default interval of tempo is 60-120, step size 10
@@ -58,7 +58,7 @@ class GestureRecognizer(activity: Activity,
         (tempoCoolDownRange.first - tempoCoolDownRange.second)/numTempoIntervals
     }
 
-    private val changeInstrumentCoolDownDuration = 1000 //ms
+    private val changeInstrumentCoolDownDuration = 800 //ms
     private var beatCoolDownDuration = tempoCoolDownRange.first // ms
     private var recognitionCoolDown = 0
 
@@ -196,8 +196,8 @@ class GestureRecognizer(activity: Activity,
     private val mockGestureMutex = Semaphore(1, true)
 
     private fun predictWrapper(accelerationIterator: Iterator<SensorMessage>,
-                        gyroIterator: Iterator<SensorMessage>,
-                        count: Int, swapAxes: Boolean): GestureType {
+                               gyroIterator: Iterator<SensorMessage>,
+                               count: Int, applyRotationOffset: Boolean): GestureType {
 
         // gesture debugging code
         if (returnFakeGestureAfter2SecsOfData) {
@@ -219,7 +219,7 @@ class GestureRecognizer(activity: Activity,
                 accelerationIterator,
                 gyroIterator,
                 count,
-                swapAxes)
+                applyRotationOffset)
     }
 
 
