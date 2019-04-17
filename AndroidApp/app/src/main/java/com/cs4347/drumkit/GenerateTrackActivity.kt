@@ -186,7 +186,7 @@ class GenerateTrackActivity : Activity() {
                                 .subscribeOn(AndroidSchedulers.mainThread())
                                 .subscribe { _, _ ->
                                     drumkit_instruments.instrumentsRecycler
-                                            .getChildAt(safeModulus(selectedInstrumentRow!!-1, instruments.size))
+                                            .getChildAt(safeModulus(selectedInstrumentRow!!+1, instruments.size))
                                             .performClick()
                                     // TODO: PLAY SOME SOUND?
                                 }
@@ -196,7 +196,7 @@ class GenerateTrackActivity : Activity() {
                                 .subscribeOn(AndroidSchedulers.mainThread())
                                 .subscribe { _, _ ->
                                     drumkit_instruments.instrumentsRecycler
-                                            .getChildAt(safeModulus(selectedInstrumentRow!!+1, instruments.size))
+                                            .getChildAt(safeModulus(selectedInstrumentRow!!-1, instruments.size))
                                             .performClick()
                                     // TODO: PLAY SOME SOUND?
                                 }
