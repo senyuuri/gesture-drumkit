@@ -49,13 +49,13 @@ class GestureRecognizer(activity: Activity,
     private var experimentalMode = false
 
     // tempo 60 has cooldown of 900, tempo 120 has cooldown of 400
-    private val coolDownRange = Pair(900, 400)
+    private val coolDownRange = Pair(700, 300)
     private val coolDownStepSize = let {
         val numTempoIntervals = (tempoRange.second - tempoRange.first)/tempoStepSize
-        (coolDownRange.second - coolDownRange.first)/numTempoIntervals
+        (coolDownRange.first - coolDownRange.second)/numTempoIntervals
     }
 
-    private var recognitionCoolDownDuration = coolDownRange.second // ms
+    private var recognitionCoolDownDuration = coolDownRange.first // ms
 
     var returnFakeGestureAfter2SecsOfData = false
 

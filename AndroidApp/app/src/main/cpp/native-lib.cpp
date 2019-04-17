@@ -131,4 +131,10 @@ JNIEXPORT jint JNICALL
 Java_com_cs4347_drumkit_GenerateTrackActivity_native_1insertBeat(JNIEnv *env, jobject instance, jint track_idx) {
     return dmachine->insertBeat(track_idx);
 }
+
+JNIEXPORT void JNICALL
+Java_com_cs4347_drumkit_GenerateTrackActivity_native_1resetTrack(JNIEnv *env, jobject instance, jint track_idx) {
+    dmachine->resetTrack(track_idx);
+}
+
 }
