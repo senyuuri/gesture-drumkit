@@ -51,6 +51,7 @@ class GenerateTrackActivity : Activity() {
         // currently an arbitrary value, ensure it is between 1000/(24 to 120Hz), standard refresh rate
         private const val seekBarUpdatePeriod = 16L
         private const val seekBarSnapDuration = 200L
+        const val DEBUG_MODE_EXTRA = "debug_mode_extra"
     }
 
     private val instruments = listOf(
@@ -63,11 +64,12 @@ class GenerateTrackActivity : Activity() {
             "Rim" to R.color.colorRim
     )
     private val disposables: CompositeDisposable = CompositeDisposable()
-    private var gestureRecognizer: GestureRecognizer? = null
+    private val gestureRecognizer: GestureRecognizer by lazy { GestureRecognizer(this) }
 
     private lateinit var instrumentsAdapter: DrumKitInstrumentsAdapter
     private var tempo = tempoRange.first
     private var selectedInstrumentRow: Int? = null
+    private var experimentalMode: Boolean = false
 
     private var seekBarMovementDisposable: Disposable? = null
     private var sensorDataDisposable: Disposable? = null
@@ -119,7 +121,7 @@ class GenerateTrackActivity : Activity() {
         hideNavBar()
         setContentView(R.layout.activity_generate_track)
 
-        gestureRecognizer = GestureRecognizer(this)
+        val debugMode: Boolean = intent.getBooleanExtra(DEBUG_MODE_EXTRA, false)
 
         instrumentsAdapter = DrumKitInstrumentsAdapter(instruments, object: RowSelectionListener {
             override fun onRowSelected(row: Int) {
@@ -138,11 +140,13 @@ class GenerateTrackActivity : Activity() {
         tempoUp.setOnClickListener {
             tempo = min(tempoRange.second, tempo + tempoStep)
             setTempoText()
+            gestureRecognizer.updateRecognitionCoolDown(tempo)
         }
 
         tempoDown.setOnClickListener {
             tempo = max(tempoRange.first, tempo - tempoStep)
             setTempoText()
+            gestureRecognizer.updateRecognitionCoolDown(tempo)
         }
 
         play.setOnClickListener {
@@ -153,7 +157,7 @@ class GenerateTrackActivity : Activity() {
         record.setOnClickListener {
             play()
 
-            gestureRecognizer!!.subscribeToGestures { gesture ->
+            gestureRecognizer.subscribeToGestures(tempo) { gesture ->
                 // a single gesture by the user is be detected as
                 // multiple gestures happening around the same time
 
@@ -177,7 +181,7 @@ class GenerateTrackActivity : Activity() {
 
         pause.setOnClickListener {
             pause()
-            gestureRecognizer!!.stopSubscriptionToGestures()
+            gestureRecognizer.stopSubscriptionToGestures()
         }
 
         // pause when seekbar is adjusted by user
@@ -196,8 +200,39 @@ class GenerateTrackActivity : Activity() {
             native_resetTrack(selectedInstrumentRow!!)
         }
 
+        toggle_experimental_mode.setOnClickListener {
+            experimentalMode = !experimentalMode
+            gestureRecognizer.setExperimentalMode(experimentalMode)
+
+            val onOffText = when (experimentalMode) {
+                true -> "ON"
+                false -> "OFF"
+            }
+
+            Toast.makeText(this@GenerateTrackActivity,
+                    "Toggled experimental mode, $onOffText",
+                    Toast.LENGTH_LONG).show()
+            toggle_experimental_mode.text = "Experimental($onOffText)"
+        }
+
+        if (debugMode) {
+            debugModeOnCreate()
+        }
+
+        setTempoText()
+        setButtons(false)
+
+        // try to make seekbar range a multiple of our update frequency (big enough should be fine)
+        // there is no particularly good reason for using the existing combination
+        drumkit_instruments.seekBar.max =
+                60 * 10 * tempo * DrumKitInstrumentsAdapter.COLUMNS * seekBarUpdatePeriod.toInt()
+
+        // initialise DrumMachine
+        native_onInit(assets)
+    }
+
+    private fun debugModeOnCreate() {
         debug_add_beat.apply {
-            // TODO: delete after debugging
             visibility = View.VISIBLE
             setOnClickListener {
                 val channelIdx = selectedInstrumentRow
@@ -213,34 +248,22 @@ class GenerateTrackActivity : Activity() {
 
             }
         }
+
         debug_mock_gesture.apply {
-            // TODO: delete after debugging
             visibility = View.VISIBLE
             setOnClickListener {
-                gestureRecognizer!!.returnFakeGestureAfter2SecsOfData =
-                        !gestureRecognizer!!.returnFakeGestureAfter2SecsOfData
-                val onOffText = when (gestureRecognizer!!.returnFakeGestureAfter2SecsOfData) {
+                gestureRecognizer.returnFakeGestureAfter2SecsOfData =
+                        !gestureRecognizer.returnFakeGestureAfter2SecsOfData
+                val onOffText = when (gestureRecognizer.returnFakeGestureAfter2SecsOfData) {
                     true -> "ON"
                     false -> "OFF"
                 }
                 Toast.makeText(this@GenerateTrackActivity,
                         "Mocks a gesture after 2s of data is received & processed, $onOffText",
                         Toast.LENGTH_LONG).show()
-                text = "Mock Ges($onOffText)"
+                text = "Mock Gesture($onOffText)"
             }
-
         }
-
-        setTempoText()
-        setButtons(false)
-
-        // try to make seekbar range a multiple of our update frequency (big enough should be fine)
-        // there is no particularly good reason for using the existing combination
-        drumkit_instruments.seekBar.max =
-                60 * 10 * tempo * DrumKitInstrumentsAdapter.COLUMNS * seekBarUpdatePeriod.toInt()
-
-        // initialise DrumMachine
-        native_onInit(assets)
     }
 
     private fun play() {

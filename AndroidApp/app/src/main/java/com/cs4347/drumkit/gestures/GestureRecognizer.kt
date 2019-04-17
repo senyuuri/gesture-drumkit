@@ -26,35 +26,55 @@ interface Model {
                 count: Int): GestureType
 }
 
-class GestureRecognizer(activity: Activity) {
+// default interval of tempo is 60-120, step size 10
+class GestureRecognizer(activity: Activity,
+                        private val tempoRange: Pair<Int, Int> = Pair(60, 120),
+                        private val tempoStepSize: Int = 10) {
 
     companion object {
         private const val NUM_SENSORS = 2
-        private const val HISTORY_SIZE = 200
         private const val TAG = "GestureRecognizer"
-        private const val RECOGNITION_COOLDOWN = 500 // ms
+
         const val WINDOW_SIZE = 50 // number of groups of 5ms data
         const val DATA_ITEMS_PER_MSG = 4 // 3 axes + 1 type (accelerometer, gyroscope)
         const val MODEL_INPUT_SIZE = NUM_SENSORS * WINDOW_SIZE * DATA_ITEMS_PER_MSG
+        const val MESSAGE_PERIOD = 5 // 5ms between each message item
 
-        // 5ms between each message item
-        const val MESSAGE_PERIOD = 5
     }
 
     private val accelerationWindow: LinkedList<SensorMessage> = LinkedList()
     private val gyroscopeWindow: LinkedList<SensorMessage> = LinkedList()
     private val compositeDisposable = CompositeDisposable()
     private var model: Model = TfLiteModel(activity)
-    private val accelerationHistory: LinkedList<SensorMessage> = LinkedList()
+    private var experimentalMode = false
+
+    // tempo 60 has cooldown of 900, tempo 120 has cooldown of 400
+    private val coolDownRange = Pair(900, 350)
+    private val coolDownStepSize = let {
+        val numTempoIntervals = (tempoRange.second - tempoRange.first)/tempoStepSize
+        (coolDownRange.first - coolDownRange.second)/numTempoIntervals
+    }
+
+    private var recognitionCoolDownDuration = coolDownRange.first // ms
 
     var returnFakeGestureAfter2SecsOfData = false
+
+    fun setExperimentalMode(isOn: Boolean) {
+        experimentalMode = isOn
+    }
+
+    fun updateRecognitionCoolDown(tempo: Int) {
+        val steps = (tempo - tempoRange.first) / tempoStepSize
+        recognitionCoolDownDuration = coolDownRange.first - (steps*coolDownStepSize)
+    }
 
     /**
      * Subscribe to gestures & respond on listener
      * Listener is executed by a thread from Schedulers.single()
      */
-    fun subscribeToGestures(listener: (Gesture) -> Unit) {
+    fun subscribeToGestures(initialTempo: Int, listener: (Gesture) -> Unit) {
         // all data wrangling & processing is done on one thread to prevent race conditions
+        updateRecognitionCoolDown(initialTempo)
 
         var gestureDetectedTime = 0L
 
@@ -71,7 +91,7 @@ class GestureRecognizer(activity: Activity) {
                 .filter { it }
                 .subscribe {
                     // predict a gesture only if we have to
-                    val skipGesture = System.currentTimeMillis() < gestureDetectedTime + RECOGNITION_COOLDOWN
+                    val skipGesture = System.currentTimeMillis() < gestureDetectedTime + recognitionCoolDownDuration
                     val gestureType = when(skipGesture) {
                         false -> {
                             val gestureTypePrediction =
@@ -118,10 +138,6 @@ class GestureRecognizer(activity: Activity) {
      * @return returns true if there is sufficient data for model to take in
      */
     private fun processSensorData(message: SensorMessage): Boolean {
-        // TODO: track accel history later on, to do acceleration tricks
-
-        // TODO preprocess data, read json in ../models for the values
-        // normalized_data = 2*(row - col_min)/(col_max - col_min) -1
 
         val justStartedLoadingAcceleration =
                 accelerationWindow.size == 0
@@ -155,7 +171,7 @@ class GestureRecognizer(activity: Activity) {
         return hasSufficientData
     }
 
-    // TODO: remove after debugging
+    // debugging code
     private var predictCountDebug = 0
     // 2 * 1000ms / MESSAGE_PERIOD, a gesture every 2s
     private val fakeGestureAfterNCounts = 2 * 1000 / MESSAGE_PERIOD
@@ -165,7 +181,6 @@ class GestureRecognizer(activity: Activity) {
                         gyroIterator: Iterator<SensorMessage>,
                         count: Int): GestureType {
 
-        // TODO: remove after debugging
         // gesture debugging code
         if (returnFakeGestureAfter2SecsOfData) {
             mockGestureMutex.acquire()
