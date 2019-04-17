@@ -33,7 +33,6 @@ class GestureRecognizer(activity: Activity,
 
     companion object {
         private const val NUM_SENSORS = 2
-        private const val HISTORY_SIZE = 200
         private const val TAG = "GestureRecognizer"
 
         const val WINDOW_SIZE = 50 // number of groups of 5ms data
@@ -47,7 +46,6 @@ class GestureRecognizer(activity: Activity,
     private val gyroscopeWindow: LinkedList<SensorMessage> = LinkedList()
     private val compositeDisposable = CompositeDisposable()
     private var model: Model = TfLiteModel(activity)
-    private val accelerationHistory: LinkedList<SensorMessage> = LinkedList()
 
     // tempo 60 has cooldown of 900, tempo 120 has cooldown of 400
     private val coolDownRange = Pair(900, 400)
@@ -135,10 +133,6 @@ class GestureRecognizer(activity: Activity,
      * @return returns true if there is sufficient data for model to take in
      */
     private fun processSensorData(message: SensorMessage): Boolean {
-        // TODO: track accel history later on, to do acceleration tricks
-
-        // TODO preprocess data, read json in ../models for the values
-        // normalized_data = 2*(row - col_min)/(col_max - col_min) -1
 
         val justStartedLoadingAcceleration =
                 accelerationWindow.size == 0
