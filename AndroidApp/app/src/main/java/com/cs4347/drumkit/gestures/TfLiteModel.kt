@@ -28,16 +28,17 @@ class TfLiteModel(activity: Activity): Model {
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
     }
 
-    private val oneHotToGestureLabel = listOf(GestureType.NO_GESTURE, GestureType.DOWN, GestureType.UP)
-
-    private val normalizationData = hashMapOf(
-            "col_min" to floatArrayOf(0.0f, -356.44f, -1178.73f, -294.77f),
-            "col_max" to floatArrayOf(1.0f, 314.86002f, 666.05f, 216.51f)
-    )
+    private val oneHotToGestureLabel = listOf(GestureType.UP, GestureType.DOWN, GestureType.NO_GESTURE)
 
     private fun normalizationTransform(input: Float, transform_min: Float, transform_max: Float): Float {
         return 2*(input - transform_min)/(transform_max - transform_min)-1
     }
+
+    /* Not really helpful in experiments
+    private val normalizationData = hashMapOf(
+            "col_min" to floatArrayOf(0.0f, -356.44f, -1178.73f, -294.77f),
+            "col_max" to floatArrayOf(1.0f, 314.86002f, 666.05f, 216.51f)
+    )
 
     private fun processData(message: Sensor.WatchPacket.SensorMessage): FloatArray {
         val resultArray = FloatArray(4)
@@ -53,26 +54,19 @@ class TfLiteModel(activity: Activity): Model {
 
         return resultArray
     }
-
-    private fun unwindToByteBuffer(floats: FloatArray) {
-        inputBuffer.rewind()
-        for (f in floats) {
-            inputBuffer.putFloat(f)
-        }
-    }
-
+    */
 
     override fun predict(accelerationIterator: Iterator<Sensor.WatchPacket.SensorMessage>,
                          gyroIterator: Iterator<Sensor.WatchPacket.SensorMessage>,
                          count: Int): GestureType {
         inputBuffer.rewind()
         for (i in 0 until count) {
-            for (data in processData(accelerationIterator.next())) {
+            for (data in accelerationIterator.next().dataList) {
                 inputBuffer.putFloat(data)
             }
         }
         for (i in 0 until count) {
-            for (data in processData(gyroIterator.next())) {
+            for (data in gyroIterator.next().dataList) {
                 inputBuffer.putFloat(data)
             }
         }

@@ -7,7 +7,7 @@ import keras
 import os
 
 # set BASE_MODES_DIR to the right path
-BASE_MODELS_DIR = '/Users/peixuan/PycharmProjects/gesture-drumkit/Model/models'
+BASE_MODELS_DIR = './models'
 
 best_model_file = os.path.join(BASE_MODELS_DIR, 'best_model.pkl')
 keras_model_file = os.path.join(BASE_MODELS_DIR, 'keras_model.h5')
