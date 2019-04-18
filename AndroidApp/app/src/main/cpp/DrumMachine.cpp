@@ -161,7 +161,7 @@ void DrumMachine::setBeat(int beatIdx){
  * @param track_idx - index of track to be reset
  */
 void DrumMachine::resetTrack(int trackIdx) {
-    for (int i = 0; i < kTotalTrack; i++) {
+    for (int i = 0; i < kTotalBeat; i++) {
         mBeatMap[trackIdx][i] = 0;
     }
 }
