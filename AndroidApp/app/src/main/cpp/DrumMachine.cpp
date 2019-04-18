@@ -97,8 +97,6 @@ void DrumMachine::refreshLoop() {
     // process all pending events and initialise a loop
     mPlayerEvents = {};
     processUpdateEvents();
-    LOGD("after processUpdateEvents()");
-    printBeatMap();
     preparePlayerEvents();
     LOGD("after preparePlayerEvents()");
     printBeatMap();
