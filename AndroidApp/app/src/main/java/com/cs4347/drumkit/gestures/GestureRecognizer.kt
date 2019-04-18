@@ -96,14 +96,18 @@ class GestureRecognizer(activity: Activity,
                 .filter { it }
                 .subscribe {
                     // predict a gesture only if we have to
-                    val skipGesture = System.currentTimeMillis() - gestureDetectedTime < recognitionCoolDown
+                    val inCoolDown = System.currentTimeMillis() - gestureDetectedTime < recognitionCoolDown
+                    val gravityData = SensorDataSubject.instance.mostRecentGravityData.toFloatArray()
+                    val cosFromUp = cosineSimilarity(faceRightGravityTemplate, gravityData)
+                    val tooFarFromUpOrRight =  cosFromUp > 0.3 && cosFromUp < 0.6
+                    val skipGesture = inCoolDown || tooFarFromUpOrRight
                     val gestureType = when(skipGesture) {
                         false -> {
                             val gestureTypePrediction =
                                     predictWrapper(accelerationWindow.iterator(),
                                             gyroscopeWindow.iterator(),
                                             WINDOW_SIZE,
-                                            experimentalMode && watchFaceIsFacingRight())
+                                            experimentalMode && watchFaceIsFacingRight(gravityData))
 
                             // skip slightly smaller than window size
                             when (gestureTypePrediction) {
@@ -226,10 +230,9 @@ class GestureRecognizer(activity: Activity,
     private val faceUpGravityTemplate = listOf(0.6292857f, 0.50838804f, 9.773225f).toFloatArray()
     private val faceRightGravityTemplate = listOf(-0.95297813f, -9.759948f, -0.075071335f).toFloatArray()
 
-    private fun watchFaceIsFacingRight(): Boolean {
-        val mostRecentGravityData = SensorDataSubject.instance.mostRecentGravityData.toFloatArray()
-        val similarityToFaceUp = cosineSimilarity(faceUpGravityTemplate, mostRecentGravityData)
-        val similarityToFaceRight = cosineSimilarity(faceRightGravityTemplate, mostRecentGravityData)
+    private fun watchFaceIsFacingRight(gravityData: FloatArray): Boolean {
+        val similarityToFaceUp = cosineSimilarity(faceUpGravityTemplate, gravityData)
+        val similarityToFaceRight = cosineSimilarity(faceRightGravityTemplate, gravityData)
         val isFacingRight = similarityToFaceRight > similarityToFaceUp
         Log.i(TAG, "isFacingRight: $isFacingRight")
         return isFacingRight
