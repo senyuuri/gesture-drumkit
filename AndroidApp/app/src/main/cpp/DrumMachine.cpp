@@ -166,7 +166,20 @@ void DrumMachine::resetTrack(int trackIdx) {
     for (int i = 0; i < kTotalBeat; i++) {
         mBeatMap[trackIdx][i] = 0;
     }
-    mLastResetTrack = trackIdx;
+
+    // clear pending update events for the track
+    std::tuple<int64_t, int> nextUpdateEvent;
+    std::queue<std::tuple<int64_t, int>> tmpUpdateEvents;
+
+    while (!mUpdateEvents.empty()) {
+        nextUpdateEvent = mUpdateEvents.front();
+        if (std::get<1>(nextUpdateEvent) != trackIdx){
+            tmpUpdateEvents.push(nextUpdateEvent);
+        }
+        mUpdateEvents.pop();
+        // LOGD("[processUpdateEvent] event(%lld,%d)-> beat_idx: %d", frameNum, trackIdx, beatIdx);
+    }
+    mUpdateEvents = tmpUpdateEvents;
     printBeatMap();
 }
 
@@ -238,14 +251,9 @@ void DrumMachine::processUpdateEvents() {
         int64_t frameNum = std::get<0>(nextUpdateEvent);
         int trackIdx = std::get<1>(nextUpdateEvent);
         int beatIdx = getBeatIdx(frameNum);
-        if (trackIdx != mLastResetTrack){
-            mBeatMap[trackIdx][beatIdx] = 1;
-        }
+        mBeatMap[trackIdx][beatIdx] = 1;
         mUpdateEvents.pop();
         // LOGD("[processUpdateEvent] event(%lld,%d)-> beat_idx: %d", frameNum, trackIdx, beatIdx);
-    }
-    if (mLastResetTrack != -1){
-        mLastResetTrack = -1;
     }
 }
 
