@@ -27,8 +27,8 @@ DrumMachine::DrumMachine(AAssetManager &assetManager): mAssetManager(assetManage
  * Initialise DrumMachine, must always be called first
  */
 void DrumMachine::init(){
-    std::vector<std::string> asset_list = { "kick.wav","finger-cymbal.wav", "clap.wav", "splash.wav", "hihat.wav", "rim.wav",
-                                            "scratch.wav", "snare.wav", "metronome.wav"};
+    std::vector<std::string> asset_list = { "kick.wav","finger-cymbal.wav", "clap.wav", "splash.wav", "hihat.wav", "scratch.wav",
+                                           "rim.wav", "snare.wav", "metronome.wav"};
     for(std::string wav_file : asset_list){
         // Load the RAW PCM data files for both the sample sound and backing track into memory.
         std::shared_ptr<AAssetDataSource> mSampleSource(AAssetDataSource::newFromAssetManager(mAssetManager,
@@ -97,7 +97,10 @@ void DrumMachine::refreshLoop() {
     // process all pending events and initialise a loop
     mPlayerEvents = {};
     processUpdateEvents();
+    LOGD("after processUpdateEvents()");
+    printBeatMap();
     preparePlayerEvents();
+    LOGD("after preparePlayerEvents()");
     printBeatMap();
 }
 
@@ -161,9 +164,12 @@ void DrumMachine::setBeat(int beatIdx){
  * @param track_idx - index of track to be reset
  */
 void DrumMachine::resetTrack(int trackIdx) {
+    LOGD("reset track:  %d", trackIdx);
     for (int i = 0; i < kTotalBeat; i++) {
         mBeatMap[trackIdx][i] = 0;
     }
+    mLastResetTrack = trackIdx;
+    printBeatMap();
 }
 
 /**
@@ -175,6 +181,7 @@ void DrumMachine::resetAll() {
             mBeatMap[i][j] = 0;
         }
     }
+
 }
 
 /**
@@ -233,9 +240,14 @@ void DrumMachine::processUpdateEvents() {
         int64_t frameNum = std::get<0>(nextUpdateEvent);
         int trackIdx = std::get<1>(nextUpdateEvent);
         int beatIdx = getBeatIdx(frameNum);
-        mBeatMap[trackIdx][beatIdx] = 1;
+        if (trackIdx != mLastResetTrack){
+            mBeatMap[trackIdx][beatIdx] = 1;
+        }
         mUpdateEvents.pop();
         // LOGD("[processUpdateEvent] event(%lld,%d)-> beat_idx: %d", frameNum, trackIdx, beatIdx);
+    }
+    if (mLastResetTrack != -1){
+        mLastResetTrack = -1;
     }
 }
 

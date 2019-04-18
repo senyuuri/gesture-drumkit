@@ -73,6 +73,7 @@ private:
     int mBeatMap[kTotalTrack][kTotalBeat] = {{ 0 }};
     int mTempo = 60;
     int mBeatStartIndex = 0;
+    int mLastResetTrack = -1;
     bool mMetronomeOn = true;
     bool mMetronomeOnly = false;
 };
