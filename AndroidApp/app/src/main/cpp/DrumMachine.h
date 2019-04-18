@@ -46,6 +46,7 @@ public:
     void resetAll();
     int insertBeat(int track_idx);
     void toggleMetronome();
+    void playTrackSample(int trackIdx);
     // void onSurfaceChanged(int widthInPixels, int heightInPixels);
 
     // Inherited from oboe::AudioStreamCallback

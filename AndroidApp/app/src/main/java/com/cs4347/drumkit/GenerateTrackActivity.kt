@@ -39,6 +39,7 @@ class GenerateTrackActivity : Activity() {
     private external fun native_insertBeat(channel_idx: Int): Int
     private external fun native_setTempo(tempo: Int)
     private external fun native_resetTrack(track_idx: Int)
+    private external fun native_playTrackSample(track_idx: Int)
 
     init
     {
@@ -133,6 +134,7 @@ class GenerateTrackActivity : Activity() {
                 Toast.makeText(this@GenerateTrackActivity,
                         "${instruments[row].first} selected",
                         Toast.LENGTH_SHORT).show()
+                native_playTrackSample(selectedInstrumentRow!!)
             }
         })
 
@@ -188,7 +190,7 @@ class GenerateTrackActivity : Activity() {
                                     drumkit_instruments.instrumentsRecycler
                                             .getChildAt(safeModulus(selectedInstrumentRow!!+1, instruments.size))
                                             .performClick()
-                                    // TODO: PLAY SOME SOUND?
+                                    native_playTrackSample(selectedInstrumentRow!!+1)
                                 }
                     }
                     GestureType.RIGHT -> {
@@ -198,7 +200,7 @@ class GenerateTrackActivity : Activity() {
                                     drumkit_instruments.instrumentsRecycler
                                             .getChildAt(safeModulus(selectedInstrumentRow!!-1, instruments.size))
                                             .performClick()
-                                    // TODO: PLAY SOME SOUND?
+                                    native_playTrackSample(selectedInstrumentRow!!-1)
                                 }
                     }
                     else -> {
